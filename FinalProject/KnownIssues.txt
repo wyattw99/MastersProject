@@ -1,7 +1,0 @@
-Things I know are issues currently 
-number of layout files
-use of integrated keyboard
-api call taking too long when getting another word
-package size, likely reduced with fixing layout
-bland design
-code may be able to be condenced 

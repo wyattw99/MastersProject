@@ -2,22 +2,39 @@ import React from 'react';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import ReactDOM from "react-dom";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Layout from "./Layout";
 import Login from "./pages/Login";
 import CreateAccount from "./pages/CreateAccount";
-import NotFound from "./pages/NotFound";
+import AthleteSetup from "./pages/AthleteSetup";
 
+const { palette } = createTheme();
+const { augmentColor } = palette;
+const createColor = (mainColor) => augmentColor({ color: { main: mainColor } });
+const theme = createTheme({
+    palette: {
+        mode: 'light',
+        primary: createColor('#D7837A'),
+        secondary: createColor('#CEB4D5'),
+        dark: createColor('#322B34'),
+        light: createColor('#F5F5F5'),
+    }
+});
 export default function App() {
-    return (<BrowserRouter>
-        <Routes>
-            <Route path="/" element={<Layout />}>
-                <Route index element={<Login />} />
-                <Route path="createaccount" element={<CreateAccount />} />
-                <Route path="*" element={<NotFound />} />
-            </Route>
-        </Routes>
-    </BrowserRouter>);
+    return (
+        <ThemeProvider theme={theme}>
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/" element={<Layout />}>
+                        <Route index element={<Login />} />
+                        <Route path="create-account" element={<CreateAccount />} />
+                        <Route path="athlete-setup" element={<AthleteSetup />} />
+                    </Route>
+                </Routes>
+            </BrowserRouter>
+        </ThemeProvider>
+    );
 }
 
 ReactDOM.render(<App />, document.getElementById("root"));

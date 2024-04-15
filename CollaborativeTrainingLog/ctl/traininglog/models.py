@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 # Create your models here.
 class StravaAPI(models.Model):
@@ -25,7 +26,7 @@ class Team(models.Model):
     teamId = models.AutoField(primary_key=True)
     teamName = models.CharField(max_length=50, null=False, blank=False)    
     
-class TrainingGroups(models.Model):
+class TrainingGroup(models.Model):
     groupId = models.AutoField(primary_key=True)
     groupName = models.CharField(max_length=50, null=False, blank=False)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='trainingGroups')    
@@ -37,7 +38,7 @@ class Athlete(models.Model):
     pending = models.BooleanField(default=True)
     birthday = models.DateField(null=False, blank=False)
     schoolYear = models.CharField(max_length=20, null=False)  
-    trainingGroups = models.ManyToManyField(TrainingGroups, related_name='athletes')
+    trainingGroups = models.ManyToManyField(TrainingGroup, related_name='athletes')
     stravaLogin = models.OneToOneField(StravaLogin, on_delete=models.SET_NULL, null=True, blank=True)
     
 class Coach(models.Model):
@@ -48,24 +49,31 @@ class Coach(models.Model):
 class Workout(models.Model):
     workoutId = models.AutoField(primary_key=True)
     coach = models.ForeignKey(Coach, on_delete=models.CASCADE, related_name='createdWorkouts')
-    athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name='assignedWorkouts')
+    athletes = models.ManyToManyField(Athlete, related_name='assignedWorkouts')
     description = models.TextField()
+    title = models.CharField(max_length=30, default='Workout')
+    assignedDate = models.DateField(default=timezone.now, null=False)
 
 class Activity(models.Model):
     activityId = models.AutoField(primary_key=True)
     name = models.CharField(max_length=50)
+    activityType = models.CharField(max_length=30)
+    description = models.TextField()
     movingTime = models.DurationField()
     elapsedTime = models.DurationField()
     stravaId = models.CharField(max_length=30)
-    startDate = models.DateTimeField()
+    startDate = models.DateTimeField(default=timezone.now(), null=False)
     distance = models.DecimalField(max_digits=10, decimal_places=2)
     hasHeartrate = models.BooleanField(default=False)
     averageHeartrate = models.IntegerField(null=True, blank=True)
     maxHeartrate = models.IntegerField(null=True, blank=True)
     stravaManual = models.BooleanField(default=False)
-    manual = models.BooleanField(default=False)
-    hasGps = models.BooleanField(default=True)
+    manual = models.BooleanField(default=True)
+    hasGps = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f"Id: {self.activityId}, Activity: {self.name}, Type: {self.activityType}, Time: {self.movingTime}, Start Date: {self.startDate}, Distance: {self.distance}"    
+    
     class Meta:
         abstract = True
         
@@ -74,22 +82,86 @@ class Bike(Activity):
     averageSpeed = models.DecimalField(max_digits=5, decimal_places=2)
     maxSpeed = models.DecimalField(max_digits=5, decimal_places=2)
     
+    def jsonFormattedStr(self):
+        return {
+        'athlete': self.athlete,
+        'activityType': 'bike',
+        'name': self.name,
+        'description': self.description,
+        'movingTime': str(self.movingTime),
+        'elapsedTime': str(self.elapsedTime),
+        'startDate': str(self.startDate),
+        'distance': str(self.distance),
+        'averageHeartrate': str(self.averageHeartrate),
+        'maxHeartrate': str(self.maxHeartrate),
+        'averageSpeed': str(self.averageSpeed),
+        'maxSpeed': str(self.maxSpeed)
+        }
+    
 class Run(Activity):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name="runs")
     averagePace = models.DecimalField(max_digits=5, decimal_places=2)
     maxPace = models.DecimalField(max_digits=5, decimal_places=2)
     averageCadence = models.DecimalField(max_digits=3, decimal_places=2)
     
+    def jsonFormattedStr(self):
+        return {
+        'athlete': self.athlete,
+        'activityType': 'run',
+        'name': self.name,
+        'description': self.description,
+        'movingTime': str(self.movingTime),
+        'elapsedTime': str(self.elapsedTime),
+        'startDate': str(self.startDate),
+        'distance': str(self.distance),
+        'averageHeartrate': str(self.averageHeartrate),
+        'maxHeartrate': str(self.maxHeartrate),
+        'averagePace': str(self.averagePace),
+        'maxSpeed': str(self.maxPace),
+        'averageCadence': str(self.averageCadence)
+        }
+    
 class Swim(Activity):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name="swims")
     averageSpeed = models.DecimalField(max_digits=5, decimal_places=2)
     maxSpeed = models.DecimalField(max_digits=5, decimal_places=2)
     
+    def jsonFormattedStr(self):
+        return {
+        'athlete': self.athlete,
+        'activityType': 'swim',
+        'name': self.name,
+        'description': self.description,
+        'movingTime': str(self.movingTime),
+        'elapsedTime': str(self.elapsedTime),
+        'startDate': str(self.startDate),
+        'distance': str(self.distance),
+        'averageHeartrate': str(self.averageHeartrate),
+        'maxHeartrate': str(self.maxHeartrate),
+        'averageSpeed': str(self.averageSpeed),
+        'maxSpeed': str(self.maxSpeed)
+        }
+    
 class Other(Activity):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name="otherActivites")
     averageSpeed = models.DecimalField(max_digits=5, decimal_places=2)
     maxSpeed = models.DecimalField(max_digits=5, decimal_places=2)
-    activityType = models.CharField(max_length=50)
+    
+    def jsonFormattedStr(self):
+        return {
+        'athlete': self.athlete,
+        'activityType': 'other',
+        'name': self.name,
+        'description': self.description,
+        'movingTime': str(self.movingTime),
+        'elapsedTime': str(self.elapsedTime),
+        'startDate': str(self.startDate),
+        'distance': str(self.distance),
+        'averageHeartrate': str(self.averageHeartrate),
+        'maxHeartrate': str(self.maxHeartrate),
+        'averageSpeed': str(self.averageSpeed),
+        'maxSpeed': str(self.maxSpeed)
+        }
     
 
     

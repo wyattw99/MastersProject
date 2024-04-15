@@ -32,8 +32,20 @@ urlpatterns = [
     path("deleteCoach/<int:coachID>/",views.deleteCoach, name="deleteCoach"),
     
     #urls for workouts
+    path("newWorkout", views.createWorkout, name="newWorkout"),
+    path("assignToAthletes", views.assignToAthletes, name="assignToAthletes"),
+    path("getWorkout/<int:workoutID>/", views.getWorkout, name="getWorkout"),
+    path("removeAthlete/<int:workoutID>/", views.removeAthleteFromWorkout, name="removeAthlete"),
+    path("editWorkout/<int:workoutID>/", views.editWorkout, name="editWorkout"),
+    path("copyWorkout/<int:workoutID>/", views.copyWorkout, name="copyWorkout"),
+    path("deleteWorkout/<int:workoutID>/",views.deleteWorkout, name="deleteWorkout"),
     
     #urls for training groups
+    path("newTrainingGroup",views.createTrainingGroup, name="newGroup"),
+    path("getTrainingGroup/<int:groupID>/",views.getTrainingGroup, name="getGroup"),
+    path("deleteTrainingGroup/<int:groupID>/", views.deleteAthlete, name="deleteGroup"),
+    path("addAthleteToGroup/<int:athleteID>/", views.addAthleteToGroup, name="addToGroup"),
+    path("removeAthleteFromGroup/<int:athleteID>/", views.removeAthleteFromGroup, name="removeFromGroup"),
     
     #urls for strava
     

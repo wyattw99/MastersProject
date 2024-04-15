@@ -59,11 +59,11 @@ class Activity(models.Model):
     name = models.CharField(max_length=50)
     activityType = models.CharField(max_length=30)
     description = models.TextField()
-    movingTime = models.DurationField()
-    elapsedTime = models.DurationField()
+    movingTime = models.FloatField()
+    elapsedTime = models.FloatField()
     stravaId = models.CharField(max_length=30)
     startDate = models.DateTimeField(default=timezone.now(), null=False)
-    distance = models.DecimalField(max_digits=10, decimal_places=2)
+    distance = models.FloatField()
     hasHeartrate = models.BooleanField(default=False)
     averageHeartrate = models.IntegerField(null=True, blank=True)
     maxHeartrate = models.IntegerField(null=True, blank=True)
@@ -79,12 +79,12 @@ class Activity(models.Model):
         
 class Bike(Activity):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name="bikes")
-    averageSpeed = models.DecimalField(max_digits=5, decimal_places=2)
-    maxSpeed = models.DecimalField(max_digits=5, decimal_places=2)
+    averageSpeed = models.FloatField()
+    maxSpeed = models.FloatField()
     
     def jsonFormattedStr(self):
         return {
-        'athlete': self.athlete,
+        'athlete': str(self.athlete.athleteId),
         'activityType': 'bike',
         'name': self.name,
         'description': self.description,
@@ -100,13 +100,13 @@ class Bike(Activity):
     
 class Run(Activity):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name="runs")
-    averagePace = models.DecimalField(max_digits=5, decimal_places=2)
-    maxPace = models.DecimalField(max_digits=5, decimal_places=2)
-    averageCadence = models.DecimalField(max_digits=3, decimal_places=2)
+    averagePace = models.FloatField()
+    maxPace = models.FloatField()
+    averageCadence = models.FloatField()
     
     def jsonFormattedStr(self):
         return {
-        'athlete': self.athlete,
+        'athlete': str(self.athlete.athleteId),
         'activityType': 'run',
         'name': self.name,
         'description': self.description,
@@ -123,12 +123,12 @@ class Run(Activity):
     
 class Swim(Activity):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name="swims")
-    averageSpeed = models.DecimalField(max_digits=5, decimal_places=2)
-    maxSpeed = models.DecimalField(max_digits=5, decimal_places=2)
+    averageSpeed = models.FloatField()
+    maxSpeed = models.FloatField()
     
     def jsonFormattedStr(self):
         return {
-        'athlete': self.athlete,
+        'athlete': str(self.athlete.athleteId),
         'activityType': 'swim',
         'name': self.name,
         'description': self.description,
@@ -144,12 +144,12 @@ class Swim(Activity):
     
 class Other(Activity):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name="otherActivites")
-    averageSpeed = models.DecimalField(max_digits=5, decimal_places=2)
-    maxSpeed = models.DecimalField(max_digits=5, decimal_places=2)
+    averageSpeed = models.FloatField()
+    maxSpeed = models.FloatField()
     
     def jsonFormattedStr(self):
         return {
-        'athlete': self.athlete,
+        'athlete': str(self.athlete.athleteId),
         'activityType': 'other',
         'name': self.name,
         'description': self.description,

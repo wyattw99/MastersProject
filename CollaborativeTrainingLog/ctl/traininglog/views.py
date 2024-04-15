@@ -443,31 +443,32 @@ def createActivity(request):
         activityType = request.GET.get("type")
         description = request.GET.get("description")
         name = request.GET.get("name")
-        movingTime = request.GET.get("movingTime")
-        elapsedTime = request.GET.get("elapsedTime")
-        #startDate = request.GET.get("startDate")
-        distance = request.GET.get("distance") #should be in meters
-        hasHeartrate = request.GET.get("heartrate")
-        if hasHeartrate:
+        movingTime = float(request.GET.get("movingTime"))#should be in seconds
+        elapsedTime = float(request.GET.get("elapsedTime"))#should be in seconds
+        startDate = request.GET.get("startDate") #"2024-04-15 03:26:03.262689+00:00"
+        distance = float(request.GET.get("distance")) #should be in meters
+        hasHeartrate = request.GET.get("hasHeartrate")
+        if hasHeartrate == True:
             avgHeartrate = request.GET.get("avgHeartrate")
             maxHeartrate = request.GET.get("maxHeartrate")
         else:
-            avgHeartrate = None
-            maxHeartrate = None
+            avgHeartrate = 0.0
+            maxHeartrate = 0.0
         manual = request.GET.get("manual")
-        if not manual:
+        if manual == False:
             hasGps = True
         else:
             hasGps = False
         if activityType == "run":
-            averagePace = request.GET.get("averagePace")
-            maxPace = request.GET.get("maxPace")
-            averageCadence = request.GET.get("averageCadence")
+            averagePace = distance/movingTime
+            maxPace = float(request.GET.get("maxPace"))
+            
+            averageCadence = float(request.GET.get("averageCadence"))
             try:
                 newActivity = Run.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
-                                                 distance=distance, hasHeartRate=hasHeartrate, averageHeartrate=avgHeartrate, 
+                                                 distance=distance, hasHeartrate=hasHeartrate, averageHeartrate=avgHeartrate, 
                                                  maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
-                                                 averagePace=averagePace, maxPace=maxPace, averageCadence=averageCadence)
+                                                 averagePace=averagePace, maxPace=maxPace, averageCadence=averageCadence, startDate=startDate)
                 newActivity.save()
                 return JsonResponse({'message': 'Run created successfully',
                                      'activityId': newActivity.activityId})
@@ -475,26 +476,26 @@ def createActivity(request):
                 return JsonResponse({'error': str(e)}, status=500)
                 
         elif activityType == "bike":
-            averageSpeed = request.GET.get("averageSpeed")
-            maxSpeed = request.GET.get("maxSpeed")
+            averageSpeed = distance/movingTime
+            maxSpeed = float(request.GET.get("maxSpeed"))
             try:
                 newActivity = Bike.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
-                                                 distance=distance, hasHeartRate=hasHeartrate, averageHeartrate=avgHeartrate, 
+                                                 distance=distance, hasHeartrate=hasHeartrate, averageHeartrate=avgHeartrate, 
                                                  maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
-                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed)
+                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed, startDate=startDate)
                 newActivity.save()
                 return JsonResponse({'message': 'Bike created successfully',
                                      'activityId': newActivity.activityId})
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
         elif activityType == "swim":
-            averageSpeed = request.GET.get("averageSpeed")
-            maxSpeed = request.GET.get("maxSpeed")
+            averageSpeed = distance/movingTime
+            maxSpeed = float(request.GET.get("maxSpeed"))
             try:
-                newActivity = Other.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
-                                                 distance=distance, hasHeartRate=hasHeartrate, averageHeartrate=avgHeartrate, 
+                newActivity = Swim.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
+                                                 distance=distance, hasHeartrate=hasHeartrate, averageHeartrate=avgHeartrate, 
                                                  maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
-                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed)
+                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed, startDate=startDate)
                 newActivity.save()
                 return JsonResponse({'message': 'Swimm created successfully',
                                      'activityId': newActivity.activityId})
@@ -502,13 +503,13 @@ def createActivity(request):
                 return JsonResponse({'error': str(e)}, status=500)
         else:
             activityType = "other"
-            averageSpeed = request.GET.get("averageSpeed")
-            maxSpeed = request.GET.get("maxSpeed")
+            averageSpeed = distance/movingTime
+            maxSpeed = float(request.GET.get("maxSpeed"))
             try:
                 newActivity = Other.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
-                                                 distance=distance, hasHeartRate=hasHeartrate, averageHeartrate=avgHeartrate, 
+                                                 distance=distance, hasHeartrate=hasHeartrate, averageHeartrate=avgHeartrate, 
                                                  maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
-                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed)
+                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed, startDate=startDate)
                 newActivity.save()
                 return JsonResponse({'message': 'Other activity created successfully',
                                      'activityId': newActivity.activityId})
@@ -520,16 +521,17 @@ def createActivity(request):
 @csrf_exempt
 def getAthleteActivities(request, athleteID):
     if request.method == 'GET':
-        athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
+        athlete = Athlete.objects.get(athleteId=athleteID)
+        
         activityType = request.GET.get("activityType")
         try:
-            bikeActivities = athlete.bikes
+            bikeActivities = athlete.bikes.all()
             bikeData = [str(activity) for activity in bikeActivities]
-            runActivities = athlete.runs
+            runActivities = athlete.runs.all()
             runData = [str(activity) for activity in runActivities]
-            swimActivities = athlete.swims
+            swimActivities = athlete.swims.all()
             swimData = [str(activity) for activity in swimActivities]
-            otherActivities = athlete.otherActivities
+            otherActivities = athlete.otherActivites.all()
             otherData = [str(activity) for activity in otherActivities]
             if activityType == "bike":
                 return JsonResponse({'bikeData': bikeData})
@@ -555,18 +557,84 @@ def getAthleteActivities(request, athleteID):
 @csrf_exempt
 def getActivity(request,activityID):
     if request.method == 'GET':
-        activity = Activity.objects.get(activityId=activityID)
+        activityType = request.GET.get("activityType")
+       
         try:
-            activityData = activity.jsonFormattedStr()
-            return JsonResponse(activityData)
+             if activityType == "run":
+                 activity = Run.objects.get(activityId=activityID)
+                 activityData = activity.jsonFormattedStr()
+             elif activityType == "bike":
+                 activity = Bike.objects.get(activityId=activityID)
+             elif activity == "swim":
+                 activity = Swim.objects.get(activityId=activityID)
+             else:
+                 activity = Other.objects.get(activityId=activityID)
+             return JsonResponse(activityData)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
+@csrf_exempt
+def deleteActivity(request,activityID):
+    if request.method == 'DELETE':
+        
+        try:
+            activityType = request.GET.get("activityType")
+            if activityType == "run":
+                activity = Run.objects.get(activityId=activityID)
+            elif activityType == "bike":
+                activity = Bike.objects.get(activityId=activityID)
+            elif activity == "swim":
+                activity = Swim.objects.get(activityId=activityID)
+            else:
+                activity = Other.objects.get(activityId=activityID)
+            activity.delete()
+            return JsonResponse({'message': 'Activity deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405)
 
-
-    
+@csrf_exempt
+def updateActivity(request, activityID):
+    if request.method == 'PUT':
+        activityType = request.GET.get("activityType")
+        if activityType == "run":
+            activity = Run.objects.get(activityId=activityID)
+        elif activityType == "bike":
+            activity = Bike.objects.get(activityId=activityID)
+        elif activity == "swim":
+            activity = Swim.objects.get(activityId=activityID)
+        else:
+            activity = Other.objects.get(activityId=activityID)
+        try:
+            activity.name = request.GET.get('name', activity.name)
+            activity.description = request.GET.get('description', activity.description)
+            activity.movingTime = request.GET.get('movingTime', activity.movingTime)
+            activity.elapsedTime = request.GET.get('elapsedTime', activity.elapsedTime)
+            activity.startDate = request.GET.get('startDate', activity.startDate)
+            activity.distance = request.GET.get('distance', activity.distance)
+            if activity.activityType == "bike":
+                activity.averageSpeed = request.GET.get('averageSpeed', activity.averageSpeed)
+                activity.maxSpeed = request.GET.get('maxSpeed', activity.maxSpeed)
+            elif activity.activityType == "run":
+                activity.averagePace = request.GET.get('averagePace', activity.averagePace)
+                activity.maxPace = request.GET.get('maxPace', activity.maxPace)
+                activity.averageCadence = request.GET.get('averageCadence', activity.averageCadence)
+            elif activity.activityType == "swim":
+                activity.averageSpeed = request.GET.get('averageSpeed', activity.averageSpeed)
+                activity.maxSpeed = request.GET.get('maxSpeed', activity.maxSpeed)
+            elif activity.activityType == "other":
+                activity.averageSpeed = request.GET.get('averageSpeed', activity.averageSpeed)
+                activity.maxSpeed = request.GET.get('maxSpeed', activity.maxSpeed)
+            activity.save()
+            
+            return JsonResponse({'message': 'Activity updated successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Only PUT requests are allowed'}, status=405)
 
 
 #calls for comments

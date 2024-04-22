@@ -164,4 +164,11 @@ class Other(Activity):
         }
     
 
-    
+class Comment(models.Model):
+    commentId = models.AutoField(primary_key=True)
+    text = models.TextField()
+    postDate = models.DateTimeField(default=timezone.now)
+    bikeActivity = models.ForeignKey(Bike, on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    runActivity = models.ForeignKey(Run, on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    swimActivity = models.ForeignKey(Swim, on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    otherActivity = models.ForeignKey(Other, on_delete=models.CASCADE, null=True, blank=True, related_name='comments')

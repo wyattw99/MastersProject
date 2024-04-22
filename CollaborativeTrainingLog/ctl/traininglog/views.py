@@ -2,7 +2,9 @@ from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.http import JsonResponse
 from django.middleware import csrf
-from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Activity, Run, Bike, Swim, Other
+from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Activity, Run, Bike, Swim, Other, Comment
+from django.db.models import Q
+from django.utils import timezone
 
 # Create your views here.
 @csrf_exempt
@@ -15,8 +17,10 @@ def loginRequest(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            csrf_token = csrf.get_token(request)
-            return JsonResponse({'message': 'Login successful', 'csrf_token': csrf_token})
+            response = JsonResponse({'message': 'Login successful', 'userId': user.id})
+            print(response)
+            return response
+          
         else:
             return JsonResponse({'message': 'Invalid credentials'}, status=400)
     else:
@@ -43,13 +47,13 @@ def createUser(request):
             newUser.isCoach = isCoach
             newUser.isAthlete = isAthlete
             newUser.save()
-            return JsonResponse({'message': 'User created successfully'})
+            return JsonResponse({'message': 'User created successfully', 'userId': newUser.id})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
     
-@csrf_exempt
+#@csrf_exempt
 def getUser(request, userID):
     if request.method == 'GET':
         user = User.objects.get(id=userID)
@@ -76,7 +80,7 @@ def updateUser(request, userID):
             user.first_name = request.GET.get('first_name', user.first_name)
             user.last_name = request.GET.get('last_name', user.last_name)
             user.save()
-            return JsonResponse({'message': 'User updated successfully'})
+            return JsonResponse({'message': 'User updated successfully', 'userId': user.id})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
@@ -109,7 +113,7 @@ def createAthlete(request):
         try:
             newAthlete = Athlete.objects.create(user=user, birthday=birthday, schoolYear=schoolYear)
             newAthlete.save()
-            return JsonResponse({'message': 'Athlete created successfully'})
+            return JsonResponse({'message': 'Athlete created successfully', 'athleteId': newAthlete.athleteId})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
@@ -147,7 +151,7 @@ def updateAthlete(request, athleteID):
             athlete.birthday = request.GET.get('birthday', athlete.birthday)
             athlete.schoolYear = request.GET.get('schoolYear',athlete.schoolYear)
             athlete.save()
-            return JsonResponse({'message': 'Athlete updated successfully'})
+            return JsonResponse({'message': 'Athlete updated successfully', 'athleteId': athlete.athleteId})
         except Exception as e:
            return JsonResponse({'error': str(e)}, status=500)
     else:
@@ -180,7 +184,7 @@ def createCoach(request):
         try:
             newCoach = Coach.objects.create(user=user, team=team)
             newCoach.save()
-            return JsonResponse({'message': 'Coach created successfully'})
+            return JsonResponse({'message': 'Coach created successfully', 'coachId': newCoach.coachId})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
@@ -355,7 +359,7 @@ def createTrainingGroup(request):
         try:
             newGroup = TrainingGroup.objects.create(groupName=groupName,team=team)
             newGroup.save()
-            return JsonResponse({'message': 'Group created successfully'})
+            return JsonResponse({'message': 'Group created successfully', 'groupId': newGroup.groupId})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
@@ -525,13 +529,13 @@ def getAthleteActivities(request, athleteID):
         
         activityType = request.GET.get("activityType")
         try:
-            bikeActivities = athlete.bikes.all()
+            bikeActivities = sorted(athlete.bikes.all(), key=lambda activity: activity.startDate)
             bikeData = [str(activity) for activity in bikeActivities]
-            runActivities = athlete.runs.all()
+            runActivities =  sorted(athlete.runs.all(), key=lambda activity: activity.startDate)
             runData = [str(activity) for activity in runActivities]
-            swimActivities = athlete.swims.all()
+            swimActivities =  sorted(athlete.swims.all(), key=lambda activity: activity.startDate)
             swimData = [str(activity) for activity in swimActivities]
-            otherActivities = athlete.otherActivites.all()
+            otherActivities =  sorted(athlete.otherActivites.all(), key=lambda activity: activity.startDate)
             otherData = [str(activity) for activity in otherActivities]
             if activityType == "bike":
                 return JsonResponse({'bikeData': bikeData})
@@ -630,7 +634,7 @@ def updateActivity(request, activityID):
                 activity.maxSpeed = request.GET.get('maxSpeed', activity.maxSpeed)
             activity.save()
             
-            return JsonResponse({'message': 'Activity updated successfully'})
+            return JsonResponse({'message': 'Activity updated successfully', 'activityId': activity.activityId})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
@@ -638,13 +642,181 @@ def updateActivity(request, activityID):
 
 
 #calls for comments
+def createComment(request):
+    if request.method == 'POST':
+        activityType = request.GET.get('activityType')
+        activityID = request.GET.get('activityID')
+        commentText = request.GET.get('text')
+        dateTime = timezone.now()
+        try:
+            if activityType=='bike':
+                activity = Bike.objects.get(activityId=activityID)
+                newComment = Comment.objects.create(text=commentText, postDate=dateTime, bikeActivity=activity)
+            elif activityType=='run':
+                activity = Run.objects.get(activityId=activityID)
+                newComment = Comment.objects.create(text=commentText, postDate=dateTime, runActivity=activity)
+            elif activityType=='swim':
+                activity = Swim.objects.get(activityId=activityID)
+                newComment = Comment.objects.create(text=commentText, postDate=dateTime, SwimActivity=activity)
+            else:
+                activity = Other.objects.get(activityId=activityID)
+                newComment = Comment.objects.create(text=commentText, postDate=dateTime, otherActivity=activity)
+            newComment.save()
+            
+            return JsonResponse({'message': 'Comment created successfully',
+                                     'commentId': newComment.commentId})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 
+    else:
+        return JsonResponse({'message': 'Only POST requests are allowed'}, status=405) 
+    
+@csrf_exempt
+def deleteComment(request, commentID):
+    if request.method == 'DELETE':
+        try:
+            comment = Comment.object.get(commentId=commentID)
+            comment.delete()
+            return JsonResponse({'message': 'Comment deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405)
+    
+@csrf_exempt
+def getComments(request, activityID):
+ if request.method == 'GET':
+     activityType = request.GET.get("activityType")
+     try:
+          if activityType == "run":
+              activity = Run.objects.get(activityId=activityID)
+          elif activityType == "bike":
+              activity = Bike.objects.get(activityId=activityID)
+          elif activity == "swim":
+              activity = Swim.objects.get(activityId=activityID)
+          else:
+              activity = Other.objects.get(activityId=activityID)
+          comments = activity.comments.order_by('postDate')
+          commentsJson = []
+          for comment in comments:
+              commentData = {
+                  'commentId': comment.commentId,
+                  'text': comment.text}
+              commentsJson.append(commentData)
+          return JsonResponse(commentsJson)
+     except Exception as e:
+         return JsonResponse({'error': str(e)}, status=500)
+ else:
+     return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+    
 
 
 
 
 #calls for getting stats
-
+@csrf_exempt
+def getAthleteStats(request, athleteID):
+    if request.method == 'GET':
+        athlete = Athlete.objects.get(athleteId=athleteID)
+        
+        activityType = request.GET.get("activityType")
+        rangeStart = request.GET.get("rangeStart")
+        rangeEnd = request.GET.get("rangeEnd")
+        bikeData = {}
+        runData = {}
+        swimData = {}
+        otherData = {}
+        
+        try:
+            dateFilter = Q(startDate__gte=rangeStart, startDate__lte=rangeEnd) | Q(startDate__date=rangeEnd)
+            bikeActivities = athlete.bikes.filter(dateFilter)
+            bikeDistance = bikeTime = bikeAverageHeartrate = bikeNumHeartrate = temp = 0
+            for activity in bikeActivities:
+                numBikes = len(bikeActivities)
+                bikeDistance = bikeDistance + activity.distance
+                bikeTime = bikeTime + activity.movingTime
+                bikeAverageSpeed = bikeDistance/bikeTime #meters/second
+                if activity.hasHeartrate:
+                    bikeNumHeartrate = bikeNumHeartrate + 1
+                    temp = temp + activity.averageHeartrate
+                    bikeAverageHeartrate = temp/bikeNumHeartrate
+                bikeData = {'numBikes': numBikes,
+                                     'Distance': bikeDistance,
+                                     'Time': bikeTime,
+                                     'averageSpeed': bikeAverageSpeed,
+                                     'averageDistance': bikeDistance/numBikes,
+                                     'averageHeartrate': bikeAverageHeartrate}
+            runActivities =  athlete.runs.filter(dateFilter)
+            runDistance = runTime = runAverageHeartrate = runNumHeartrate = temp = 0
+            for activity in runActivities:
+                numRuns = len(runActivities)
+                runDistance = runDistance + activity.distance
+                runTime = runTime + activity.movingTime
+                runAveragePace = runDistance/runTime #meters/second
+                if activity.hasHeartrate:
+                    runNumHeartrate = runNumHeartrate + 1
+                    temp = temp + activity.averageHeartrate
+                    runAverageHeartrate = temp/runNumHeartrate
+                runData = {'numRuns': numRuns,
+                                     'Distance': runDistance,
+                                     'Time': runTime,
+                                     'averagePace': runAveragePace,
+                                     'averageDistance': runDistance/numRuns,
+                                     'averageHeartrate': runAverageHeartrate}
+            swimActivities =  athlete.swims.filter(dateFilter)
+            swimDistance = swimTime = swimAverageHeartrate = swimNumHeartrate = temp = 0
+            for activity in swimActivities:
+                numSwims = len(swimActivities)
+                swimDistance = swimDistance + activity.distance
+                swimTime = swimTime + activity.movingTime
+                swimAverageSpeed = swimDistance/swimTime #meters/second
+                if activity.hasHeartrate:
+                    swimNumHeartrate = swimNumHeartrate + 1
+                    temp = temp + activity.averageHeartrate
+                    swimAverageHeartrate = temp/swimNumHeartrate
+                swimData = {'numSwims': numSwims,
+                                     'Distance': swimDistance,
+                                     'Time': swimTime,
+                                     'averageSpeed': swimAverageSpeed,
+                                     'averageDistance': swimDistance/numSwims,
+                                     'averageHeartrate': swimAverageHeartrate}
+            otherActivities =  athlete.otherActivites.filter(dateFilter)
+            otherDistance = otherTime = otherAverageHeartrate = otherNumHeartrate = temp = 0
+            for activity in otherActivities:
+                numOthers = len(otherActivities)
+                otherDistance = otherDistance + activity.distance
+                otherTime = otherTime + activity.movingTime
+                otherAverageSpeed = otherDistance/otherTime #meters/second
+                if activity.hasHeartrate:
+                    otherNumHeartrate = otherNumHeartrate + 1
+                    temp = temp + activity.averageHeartrate
+                    otherAverageHeartrate = temp/otherNumHeartrate
+                otherData = {'numOthers': numOthers,
+                                     'Distance': otherDistance,
+                                     'Time': otherTime,
+                                     'averageSpeed': otherAverageSpeed,
+                                     'averageDistance': otherDistance/numOthers,
+                                     'averageHeartrate': otherAverageHeartrate}
+            if activityType == "bike":
+                return JsonResponse({'bikeDate': bikeData})
+            elif activityType == "run":
+               return JsonResponse({'runData': runData})
+            elif activityType == "swim":
+              return JsonResponse({'swimData': swimData})
+            elif activityType == "other":
+               return JsonResponse({'otherData': otherData})
+            else:
+                allActivitiesData = {
+                'bikeData': bikeData,
+                'runData': runData,
+                'swimData': swimData,
+                'otherData': otherData
+                }
+                return JsonResponse(allActivitiesData)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
 
 
 
@@ -728,7 +900,7 @@ def createTeam(request):
         try:
             newTeam = Team.objects.create(teamName=teamName)
             newTeam.save()
-            return JsonResponse({'message': 'Team created successfully'})
+            return JsonResponse({'message': 'Team created successfully', 'teamId': newTeam.teamId})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:

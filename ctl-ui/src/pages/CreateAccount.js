@@ -23,10 +23,10 @@ export default function CreateAccount() {
         function redirect() {
             console.log("SUCCESS")
             console.log(localStorage.getItem("userID"))
-            //if (isAthlete)
-            //    window.location.href = "/athlete-setup"
-            //if (isCoach)
-            //    window.location.href = "/team-setup"
+            if (isAthlete)
+                window.location.href = "/athlete-setup"
+            if (isCoach)
+                window.location.href = "/team-setup"
         }
 
         axios.post("http://127.0.0.1:8000/external/newUser", null, {
@@ -49,7 +49,6 @@ export default function CreateAccount() {
             }).catch(err => {
                 console.log(err);
             });
-        //localStorage.setItem("userID", 1);
         console.log({
             username: data.get('username'),
             password: data.get('password'),

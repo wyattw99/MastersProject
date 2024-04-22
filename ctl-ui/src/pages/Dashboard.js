@@ -21,6 +21,7 @@ import { mainListItems, secondaryListItems } from './components/listItems';
 import Chart from './components/Chart';
 import Deposits from './components/Deposits';
 import Orders from './components/Orders';
+import Button from '@mui/material/Button';
 
 function Copyright(props) {
     return (
@@ -109,6 +110,13 @@ export default function Dashboard() {
                     <Toolbar />
                     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
                         <Grid container spacing={3}>
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                sx={{ mt: 3, mb: 3 }}
+                            >
+                                Test Button
+                            </Button>
                             {/* Chart */}
                             {/*<Grid item xs={12} md={8} lg={9}>*/}
                             {/*    <Paper*/}

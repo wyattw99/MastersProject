@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useState } from 'react';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
@@ -9,6 +10,8 @@ import Divider from '@mui/material/Divider';
 import { styled, alpha } from '@mui/material/styles';
 import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
+
+import axios from "axios"
 
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
@@ -51,13 +54,60 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function TeamSetup() {
+    const [newTeam, setNewTeam] = useState(true);
+
     const handleSubmit = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
-        console.log({
-            newTeam: data.get('teamName'),
-            joinTeam: data.get('joinTeam'),
-        });
+
+        function redirect() {
+            console.log("SUCCESS")
+            console.log(localStorage.getItem("teamID"))
+            console.log(localStorage.getItem("coachID"))
+            window.location.href = "/dashboard"
+        }
+        function createCoach() {
+            axios.post("http://127.0.0.1:8000/external/newCoach", null, {
+                params: {
+                    userId: localStorage.getItem("userID"),
+                    teamId: localStorage.getItem("teamID")
+                }
+            })
+                .then((response) => {
+                    localStorage.setItem("coachID", response.data.coachId);
+                    console.log(response)
+                    if (response.status === 200) {
+                        redirect();
+                    }
+                }).catch(err => {
+                    console.log(err);
+                });
+        }
+
+        if (newTeam) {
+            axios.post("http://127.0.0.1:8000/external/newTeam", null, {
+                params: {
+                    teamName: data.get('teamName')
+                }
+            })
+                .then((response) => {
+                    localStorage.setItem("teamID", response.data.teamId);
+                    console.log(response)
+                    if (response.status === 200) {
+                        createCoach();
+                    }
+                }).catch(err => {
+                    console.log(err);
+                });
+            console.log({
+                newTeam: data.get('teamName')
+            });
+        }
+        else {
+            console.log({
+                joinTeam: data.get('joinTeam')
+            });
+        }
     };
 
     return (
@@ -113,6 +163,7 @@ export default function TeamSetup() {
                     </Search>
                     <Button
                         fullWidth
+                        onClick={() => setNewTeam(false)}
                         type="submit"
                         variant="contained"
                         color="light"

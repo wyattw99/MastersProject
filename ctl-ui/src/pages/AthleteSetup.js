@@ -82,6 +82,8 @@ export default function AthleteSetup() {
         const data = new FormData(event.currentTarget);
 
         function redirect() {
+            console.log("SUCCESS")
+            console.log(localStorage.getItem("athleteID"))
             window.location.href = "/dashboard"
         }
 
@@ -89,7 +91,7 @@ export default function AthleteSetup() {
             params: {
                 birthday: dayjs(data.get('birthday')).format("YYYY-MM-DD"),
                 schoolYear: data.get('schoolYear'),
-                userId: parseInt(localStorage.getItem("userID"))
+                userID: parseInt(localStorage.getItem("userID"))
             }
         })
             .then((response) => {
@@ -101,8 +103,6 @@ export default function AthleteSetup() {
             }).catch(err => {
                 console.log(err);
             });
-        //window.location.href = "/dashboard"
-        //localStorage.setItem("athleteID", 1);
         console.log({
             birthday: dayjs(data.get('birthday')).format("YYYY-MM-DD"),
             schoolYear: data.get('schoolYear'),

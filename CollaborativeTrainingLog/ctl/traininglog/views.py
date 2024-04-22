@@ -1,10 +1,8 @@
-from django.shortcuts import render
 from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.http import JsonResponse
-from django.core.serializers import serialize
 from django.middleware import csrf
-from .models import User, Athlete, Coach, Team
+from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Activity, Run, Bike, Swim, Other
 
 # Create your views here.
 @csrf_exempt
@@ -222,12 +220,210 @@ def deleteCoach(request, coachID):
 
     
 #calls for workouts
+@csrf_exempt
+def createWorkout(request):
+    if request.method == 'POST':
+        coachID = request.GET.get("coachID")
+        description = request.GET.get("description")
+        assignedDate = request.GET.get("date")
+        title = request.GET.get("title")
+        try:
+            newWorkout = Workout.objects.create(coach=Coach.objects.get(coachId=coachID), title=title, assignedDate=assignedDate, description=description)
+            newWorkout.save()
+            return JsonResponse({'message': 'Workout created successfully',
+                                 'workoutID': newWorkout.workoutId})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message', 'Only POST requests are allowed'}, status=405)
+    
+@csrf_exempt
+def assignToAthletes(request):
+    if request.method == 'PUT':
+        workout = Workout.objects.get(workoutId = request.GET.get("workoutID"))
+        numAthletes = int(request.GET.get("numAthletes"))
+        if numAthletes > 1:
+            athleteIDs = request.GET.get("athleteIDs").split(",")   
+            athletes = Athlete.objects.filter(pk__in=athleteIDs)  
+        else:
+            athleteIDs = request.GET.get("athleteIDs")
+            athletes = Athlete.objects.get(athleteId=athleteIDs)
+        try:
+            for athlete in athletes:
+                workout.athletes.add(athlete)
+            workout.save()
+            return JsonResponse({'message': 'Athletes Assigned to Workout'})     
+        except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message', 'Only Put requests are allowed'}, status=405)
 
-
-
-
-
+@csrf_exempt
+def getWorkout(request, workoutID):
+    if request.method == 'GET':
+        try:
+            workout = Workout.objects.get(workoutId=workoutID)
+            assignedAthletes = workout.athletes.all()
+            assignedAthletes = [{
+                'athleteID' : athlete.athleteId,
+                'firstName': athlete.user.first_name,
+                'lastName': athlete.user.last_name
+            } for athlete in assignedAthletes]
+            
+            data = {
+                'workoutID': workout.workoutId,
+                'title': workout.title,
+                'description': workout.description,
+                'assignedDate': workout.assignedDate,
+                'coachID': workout.coach.coachId,
+                'assignedAthletes': assignedAthletes
+            }
+            
+            return JsonResponse(data)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+    
+@csrf_exempt
+def removeAthleteFromWorkout(request, workoutID):
+    if request.method == 'PUT':
+        workout = Workout.objects.get(workoutId=workoutID)
+        athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
+        try:
+            workout.athletes.remove(athlete)
+            workout.save()
+            return JsonResponse({'message': 'Athlete Removed from Workout'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        else:
+            return JsonResponse({'message', 'Only PUT requests are allowed'}, status=405)
+        
+@csrf_exempt
+def editWorkout(request, workoutID):
+    if request.method == 'PUT' or request.method == 'POST':
+        try:
+            workout = Workout.objects.get(workoutId = workoutID)
+            workout.title = request.GET.get('title', workout.title)
+            workout.description = request.GET.get('description', workout.description)
+            workout.assignedDate = request.GET.get('assignedDate', workout.assignedDate)
+            return JsonResponse({'message': 'Workout updated successfully',
+                                 'workoutID': workout.workoutId})
+        except Exception as e:
+           return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
+    
+@csrf_exempt
+def copyWorkout(request, workoutID):
+    if request.method == 'POST':
+        workout = Workout.objects.get(workoutId = workoutID)
+        newDate = request.GET.get("newDate")
+        newTitle = request.GET.get("newTitle")
+        try:
+            newWorkout = Workout.objects.create(coach=workout.coach,title = newTitle, description=workout.description, assignedDate=newDate)
+            newWorkout.save()
+            return JsonResponse({'message': 'Workout copied successfully',
+                                 'workoutID': newWorkout.workoutId})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message', 'Only POST requests are allowed'}, status=405)
+    
+@csrf_exempt
+def deleteWorkout(request, workoutID):
+    if request.method == 'DELETE':
+        try:
+            workout = Workout.objects.get(workoutId=workoutID)
+            workout.delete()
+            return JsonResponse({'message': 'Workout deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+       return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405) 
+        
+   
+    
+   
+    
 #calls for training groups
+@csrf_exempt
+def createTrainingGroup(request):
+    if request.method == 'POST':
+        groupName = request.GET.get('groupName')
+        team = Team.objects.get(teamId=request.GET.get('teamID'))
+        try:
+            newGroup = TrainingGroup.objects.create(groupName=groupName,team=team)
+            newGroup.save()
+            return JsonResponse({'message': 'Group created successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
+    
+@csrf_exempt
+def getTrainingGroup(request, groupID):
+    if request.method == 'GET':
+        group = TrainingGroup.objects.get(groupId=groupID)
+        try:
+            athletes = group.athletes.all()
+            athleteData = [{
+                    'firstName': athlete.user.first_name,
+                    'lastName': athlete.user.last_name
+                } for athlete in athletes]
+            groupData = {
+                    'groupId': group.groupId,
+                    'groupName': group.groupName,
+                    'athletes': athleteData
+                }
+        except Exception as e:
+            print(e)
+            groupData = {
+                    'groupId': group.groupId,
+                    'groupName': group.groupName,
+                    'athletes': ''
+                }
+        return JsonResponse(groupData)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+    
+@csrf_exempt
+def deleteTrainingGroup(request, groupID):
+    if request.method == 'DELETE':
+        try:
+            group = TrainingGroup.objects.get(groupId=groupID)
+            group.delete()
+            return JsonResponse({'message': 'Group deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405)
+    
+@csrf_exempt
+def addAthleteToGroup(request, athleteID):
+    if request.method == 'POST' or request.method == 'PUT':
+        try:
+            athlete = Athlete.objects.get(athleteId = athleteID)
+            athlete.trainingGroups = TrainingGroup.objects.get(groupId=request.GET.get('groupID'))
+            athlete.save()
+            return JsonResponse({'message': 'Athlete added to group successfully'})
+        except Exception as e:
+           return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
+
+@csrf_exempt
+def removeAthleteFromGroup(request, athleteID):
+    if request.method == 'POST' or request.method == 'PUT':
+        try:
+            athlete = Athlete.objects.get(athleteId = athleteID)
+            athlete.trainingGroups.remove(request.Get.get("groupID"))
+            athlete.save()
+            return JsonResponse({'message': 'Athlete removed from team successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
 
 
 
@@ -240,9 +436,137 @@ def deleteCoach(request, coachID):
 
 
 #calls for activities
+@csrf_exempt
+def createActivity(request):
+    if request.method == 'POST':
+        athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
+        activityType = request.GET.get("type")
+        description = request.GET.get("description")
+        name = request.GET.get("name")
+        movingTime = request.GET.get("movingTime")
+        elapsedTime = request.GET.get("elapsedTime")
+        #startDate = request.GET.get("startDate")
+        distance = request.GET.get("distance") #should be in meters
+        hasHeartrate = request.GET.get("heartrate")
+        if hasHeartrate:
+            avgHeartrate = request.GET.get("avgHeartrate")
+            maxHeartrate = request.GET.get("maxHeartrate")
+        else:
+            avgHeartrate = None
+            maxHeartrate = None
+        manual = request.GET.get("manual")
+        if not manual:
+            hasGps = True
+        else:
+            hasGps = False
+        if activityType == "run":
+            averagePace = request.GET.get("averagePace")
+            maxPace = request.GET.get("maxPace")
+            averageCadence = request.GET.get("averageCadence")
+            try:
+                newActivity = Run.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
+                                                 distance=distance, hasHeartRate=hasHeartrate, averageHeartrate=avgHeartrate, 
+                                                 maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
+                                                 averagePace=averagePace, maxPace=maxPace, averageCadence=averageCadence)
+                newActivity.save()
+                return JsonResponse({'message': 'Run created successfully',
+                                     'activityId': newActivity.activityId})
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+                
+        elif activityType == "bike":
+            averageSpeed = request.GET.get("averageSpeed")
+            maxSpeed = request.GET.get("maxSpeed")
+            try:
+                newActivity = Bike.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
+                                                 distance=distance, hasHeartRate=hasHeartrate, averageHeartrate=avgHeartrate, 
+                                                 maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
+                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed)
+                newActivity.save()
+                return JsonResponse({'message': 'Bike created successfully',
+                                     'activityId': newActivity.activityId})
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+        elif activityType == "swim":
+            averageSpeed = request.GET.get("averageSpeed")
+            maxSpeed = request.GET.get("maxSpeed")
+            try:
+                newActivity = Other.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
+                                                 distance=distance, hasHeartRate=hasHeartrate, averageHeartrate=avgHeartrate, 
+                                                 maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
+                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed)
+                newActivity.save()
+                return JsonResponse({'message': 'Swimm created successfully',
+                                     'activityId': newActivity.activityId})
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+        else:
+            activityType = "other"
+            averageSpeed = request.GET.get("averageSpeed")
+            maxSpeed = request.GET.get("maxSpeed")
+            try:
+                newActivity = Other.objects.create(name=name, athlete=athlete, activityType=activityType, description=description, movingTime=movingTime, elapsedTime=elapsedTime, 
+                                                 distance=distance, hasHeartRate=hasHeartrate, averageHeartrate=avgHeartrate, 
+                                                 maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
+                                                 averageSpeed=averageSpeed, maxSpeed=maxSpeed)
+                newActivity.save()
+                return JsonResponse({'message': 'Other activity created successfully',
+                                     'activityId': newActivity.activityId})
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)  
+    
+@csrf_exempt
+def getAthleteActivities(request, athleteID):
+    if request.method == 'GET':
+        athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
+        activityType = request.GET.get("activityType")
+        try:
+            bikeActivities = athlete.bikes
+            bikeData = [str(activity) for activity in bikeActivities]
+            runActivities = athlete.runs
+            runData = [str(activity) for activity in runActivities]
+            swimActivities = athlete.swims
+            swimData = [str(activity) for activity in swimActivities]
+            otherActivities = athlete.otherActivities
+            otherData = [str(activity) for activity in otherActivities]
+            if activityType == "bike":
+                return JsonResponse({'bikeData': bikeData})
+            elif activityType == "run":
+               return JsonResponse({'runData': runData})
+            elif activityType == "swim":
+              return JsonResponse({'swimData': swimData})
+            elif activityType == "other":
+               return JsonResponse({'otherData': otherData})
+            else:
+                allActivitiesData = {
+                'bikeData': bikeData,
+                'runData': runData,
+                'swimData': swimData,
+                'otherData': otherData
+                }
+                return JsonResponse(allActivitiesData)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+        
+@csrf_exempt
+def getActivity(request,activityID):
+    if request.method == 'GET':
+        activity = Activity.objects.get(activityId=activityID)
+        try:
+            activityData = activity.jsonFormattedStr()
+            return JsonResponse(activityData)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+    
 
 
-
+    
 
 
 #calls for comments
@@ -375,8 +699,8 @@ def deleteTeam(request, teamID):
             team = Team.objects.get(teamId=teamID)
             team.delete()
             return JsonResponse({'message': 'Team deleted successfully'})
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'Team does not exist'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405)
         

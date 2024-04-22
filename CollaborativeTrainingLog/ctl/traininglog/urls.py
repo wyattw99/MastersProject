@@ -50,10 +50,19 @@ urlpatterns = [
     #urls for strava
     
     #urls for activities
+    path("newActivity",views.createActivity, name="newActivity"),
+    path("getAthleteActivities/<int:athleteID>/",views.getAthleteActivities, name="getAthleteActivities"),
+    path("getActivity/<int:activityID>/", views.getActivity, name="getActivity"),
+    path("deleteActivity/<int:activityID>/",views.deleteActivity, name="deleteActivity"),
+    path("editActivity/<int:activityID>/",views.updateActivity, name="updateActivity"),
     
     #urls for comments
+    path("createComment",views.createComment, name="createComment"),
+    path("deleteComment/<int:commentID>/", views.deleteComment, name="deleteComment"),
+    path("getComments/<int:activityID/", views.getComments, name="getComments"),
     
     #urls for getting stats
+    path("getAthleteStats/<int:athleteID>/", views.getAthleteStats, name="getAthleteStats"),
     
     #urls for rosters
     path("addToTeam/<int:athleteID>/",views.addAthleteToTeam, name="addToTeam"),

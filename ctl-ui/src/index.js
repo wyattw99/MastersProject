@@ -2,12 +2,14 @@ import React from 'react';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import ReactDOM from "react-dom";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Layout from "./Layout";
 import Login from "./pages/Login";
 import CreateAccount from "./pages/CreateAccount";
 import AthleteSetup from "./pages/AthleteSetup";
+import TeamSetup from "./pages/TeamSetup";
+import Dashboard from "./pages/Dashboard";
 
 const { palette } = createTheme();
 const { augmentColor } = palette;
@@ -30,6 +32,8 @@ export default function App() {
                         <Route index element={<Login />} />
                         <Route path="create-account" element={<CreateAccount />} />
                         <Route path="athlete-setup" element={<AthleteSetup />} />
+                        <Route path="team-setup" element={<TeamSetup />} />
+                        <Route path="dashboard" element={<Dashboard />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

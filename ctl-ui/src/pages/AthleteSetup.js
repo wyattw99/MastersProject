@@ -14,6 +14,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
+import axios from "axios"
+
 const date = dayjs();
 
 const schoolYears = [
@@ -78,9 +80,33 @@ export default function AthleteSetup() {
     const handleSubmit = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
+
+        function redirect() {
+            window.location.href = "/dashboard"
+        }
+
+        axios.post("http://127.0.0.1:8000/external/newAthlete", null, {
+            params: {
+                birthday: dayjs(data.get('birthday')).format("YYYY-MM-DD"),
+                schoolYear: data.get('schoolYear'),
+                userId: parseInt(localStorage.getItem("userID"))
+            }
+        })
+            .then((response) => {
+                localStorage.setItem("athleteID", response.data.athleteId);
+                console.log(response)
+                if (response.status === 200) {
+                    redirect();
+                }
+            }).catch(err => {
+                console.log(err);
+            });
+        //window.location.href = "/dashboard"
+        //localStorage.setItem("athleteID", 1);
         console.log({
-            username: data.get('username'),
-            password: data.get('password'),
+            birthday: dayjs(data.get('birthday')).format("YYYY-MM-DD"),
+            schoolYear: data.get('schoolYear'),
+            userId: parseInt(localStorage.getItem("userID"))
         });
     };
 
@@ -102,7 +128,7 @@ export default function AthleteSetup() {
                 <Box component="form" onSubmit={handleSubmit} noValidate autoComplete="off" sx={{ mt: 1, width: 300 }}>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DemoContainer components={['DatePicker']}>
-                            <DatePicker label="Birthday" defaultValue={date} />
+                            <DatePicker label="Birthday" name="birthday" defaultValue={date} />
                         </DemoContainer>
                     </LocalizationProvider>
                     <TextField
@@ -132,7 +158,6 @@ export default function AthleteSetup() {
                         fullWidth
                         variant="contained"
                         color="light"
-                        href="/athlete-setup"
                         sx={{ mt: 3, mb: 2, marginBottom: 5 }}
                     >
                         Finish

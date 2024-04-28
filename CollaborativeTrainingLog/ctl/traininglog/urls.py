@@ -13,6 +13,7 @@ app_name='traininglog'
 
 urlpatterns = [
     path("login",views.loginRequest, name="login"),
+    path("logout", views.logoutRequest, name="logout"),
     
     #urls for users
     path("newUser",views.createUser, name="newUser"),

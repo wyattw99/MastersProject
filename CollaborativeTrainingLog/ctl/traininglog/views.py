@@ -7,6 +7,8 @@ from django.middleware import csrf
 from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Activity, Run, Bike, Swim, Other, Comment
 from django.db.models import Q
 from django.utils import timezone
+from django.shortcuts import render, redirect
+import requests
 
 # Create your views here.
 @csrf_exempt
@@ -19,7 +21,15 @@ def loginRequest(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            response = JsonResponse({'message': 'Login successful', 'userId': user.id})
+            if user.isAthlete is True and user.isCoach is True:
+                response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'athleteId': user.athleteProfile.athleteId, 'coachId': user.coachProfile.coachId})
+            elif user.isAthlete is True:
+                response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'athleteId': user.athleteProfile.athleteId})
+            elif user.isCoach is True:
+                response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'coachId': user.coachProfile.coachId})
+            else:
+                response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'login message': 'admin login'})
+            
             print(response)
             return response
           
@@ -355,11 +365,72 @@ def deleteWorkout(request, workoutID):
             return JsonResponse({'error': str(e)}, status=500)
     else:
        return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405) 
+   
+@login_required
+def getAthleteWorkouts(request,athleteID):
+    if request.method == 'GET':
+        athlete = Athlete.objects.get(athleteId=athleteID)
         
+        rangeStart = request.GET.get("rangeStart")
+        rangeEnd = request.GET.get("rangeEnd")
+        workoutData= {}
+        
+        try:
+            dateFilter = Q(assignedDate__range=(rangeStart, rangeEnd))|Q(assignedDate=rangeEnd)
+            workouts = athlete.assignedWorkouts.filter(dateFilter).order_by('assignedDate')
+            workoutData = [{
+                'workoutID': workout.workoutId,
+                'title': workout.title,
+                'description': workout.description,
+                'assignedDate': workout.assignedDate,
+                'coachID': workout.coach.coachId 
+                } for workout in workouts]
+            assignedWorkouts = {
+                'assignedWorkouts': workoutData
+            }
+            return JsonResponse(assignedWorkouts)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+        
+@login_required
+def getCoachWorkouts(request,coachID):
+    if request.method == 'GET':
+        coach = Coach.objects.get(coachId=coachID)
+        
+        rangeStart = request.GET.get("rangeStart")
+        rangeEnd = request.GET.get("rangeEnd")
+        workoutData= {}
+        
+        try:
+            dateFilter = Q(assignedDate__range=(rangeStart, rangeEnd))
+            workouts = coach.createdWorkouts.filter(dateFilter).order_by('assignedDate')
+            workoutData = [{
+                'workoutID': workout.workoutId,
+                'title': workout.title,
+                'description': workout.description,
+                'assignedDate': workout.assignedDate,
+                'coachID': workout.coach.coachId,
+                'assignedAthletes': [{
+                    'athleteID' : athlete.athleteId,
+                    'firstName': athlete.user.first_name,
+                    'lastName': athlete.user.last_name
+                } for athlete in workout.athletes.all()]
+            } for workout in workouts]
+            assignedWorkouts = {
+                'assignedWorkouts': workoutData
+            }
+            return JsonResponse(assignedWorkouts)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)    
    
-    
+
+
+
    
-    
 #calls for training groups
 @login_required
 def createTrainingGroup(request):
@@ -444,7 +515,43 @@ def removeAthleteFromGroup(request, athleteID):
 
 
 #calls for strava
+# @csrf_exempt
+# def get_access_token(request):
+#     # Redirect the user to Strava for authorization
+#     client_id = '98300'
+#     redirect_uri = 'http://localhost/exchange_token'  # This should match the redirect URI configured in your Strava app settings
+#     strava_auth_url = f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&approval_prompt=force&scope=read'
+#     return JsonResponse({'redirect_url': strava_auth_url})
 
+# @csrf_exempt
+# def exchange_token(request):
+#     # After user authorization, exchange authorization code for access token
+#     client_id = '98300'
+#     client_secret = '2c15fb7ebf1d3016e69f19c4d75eaabc855912f9'
+#     code = request.GET.get('code')
+#     athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
+#     token_url = 'https://www.strava.com/oauth/token'
+#     payload = {
+#         'client_id': client_id,
+#         'client_secret': client_secret,
+#         'code': code,
+#         'grant_type': 'authorization_code'
+#     }
+#     response = requests.post(token_url, data=payload)
+#     token_data = response.json()
+#     print(token_data)
+    
+#     # Assuming token_data contains the access token, you can now use it to make requests to the Strava API
+#     access_token = token_data['access_token']
+
+#     # Now, you can make a request to get profile information
+#     profile_url = 'https://www.strava.com/api/v3/athlete'
+#     headers = {'Authorization': f'Bearer {access_token}'}
+#     profile_response = requests.get(profile_url, headers=headers)
+#     profile_data = profile_response.json()
+
+#     # Do something with the profile_data, like displaying it in a template
+#     return JsonResponse(profile_data)
 
 
 
@@ -531,6 +638,50 @@ def createActivity(request):
                 return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)  
+    
+@login_required
+def getAthleteActivitiesRange(request, athleteID):
+    if request.method == 'GET':
+        athlete = Athlete.objects.get(athleteId=athleteID)
+        
+        activityType = request.GET.get("activityType")
+        rangeStart = request.GET.get("rangeStart")
+        rangeEnd = request.GET.get("rangeEnd")
+        bikeData = {}
+        runData = {}
+        swimData = {}
+        otherData = {}
+        
+        try:
+            dateFilter = Q(startDate__gte=rangeStart, startDate__lte=rangeEnd) | Q(startDate__date=rangeEnd)
+            bikeActivities = athlete.bikes.filter(dateFilter).order_by('startDate')
+            bikeData = [str(activity) for activity in bikeActivities]
+            runActivities = athlete.runs.filter(dateFilter).order_by('startDate')
+            runData = [str(activity) for activity in runActivities]
+            swimActivities =  athlete.swims.filter(dateFilter).order_by('startDate')
+            swimData = [str(activity) for activity in swimActivities]
+            otherActivities =  athlete.otherActivites.filter(dateFilter).order_by('startDate')
+            otherData = [str(activity) for activity in otherActivities]
+            if activityType == "bike":
+                return JsonResponse({'bikeData': bikeData})
+            elif activityType == "run":
+               return JsonResponse({'runData': runData})
+            elif activityType == "swim":
+              return JsonResponse({'swimData': swimData})
+            elif activityType == "other":
+               return JsonResponse({'otherData': otherData})
+            else:
+                allActivitiesData = {
+                'bikeData': bikeData,
+                'runData': runData,
+                'swimData': swimData,
+                'otherData': otherData
+                }
+                return JsonResponse(allActivitiesData)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
 @login_required
 def getAthleteActivities(request, athleteID):
@@ -652,6 +803,7 @@ def updateActivity(request, activityID):
 
 
 #calls for comments
+@login_required
 def createComment(request):
     if request.method == 'POST':
         activityType = request.GET.get('activityType')

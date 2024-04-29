@@ -23,18 +23,7 @@ import Deposits from './components/Deposits';
 import Orders from './components/Orders';
 import Button from '@mui/material/Button';
 
-function Copyright(props) {
-    return (
-        <Typography variant="body2" color="text.secondary" align="center" {...props}>
-            {'Copyright © '}
-            <Link color="inherit" href="https://mui.com/">
-                Your Website
-            </Link>{' '}
-            {new Date().getFullYear()}
-            {'.'}
-        </Typography>
-    );
-}
+import axios from "axios"
 
 const drawerWidth = 240;
 
@@ -91,10 +80,22 @@ export default function Dashboard() {
         setOpen(!open);
     };
 
+    const handleClick = (event) => {
+        axios.get(`http://127.0.0.1:8000/external/getUser/${localStorage.getItem("userID")}/`)
+            .then((response) => {
+                console.log(response)
+                if (response.status === 200) {
+                    console.log("SUCCESS");
+                    console.log(response.data.username)
+                }
+            }).catch(err => {
+                console.log(err);
+            });
+    }
+
     return (
         <ThemeProvider theme={defaultTheme}>
             <Box sx={{ display: 'flex' }}>
-                <CssBaseline />
                 <Box
                     component="main"
                     sx={{
@@ -110,45 +111,38 @@ export default function Dashboard() {
                     <Toolbar />
                     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
                         <Grid container spacing={3}>
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                sx={{ mt: 3, mb: 3 }}
-                            >
-                                Test Button
-                            </Button>
                             {/* Chart */}
-                            {/*<Grid item xs={12} md={8} lg={9}>*/}
-                            {/*    <Paper*/}
-                            {/*        sx={{*/}
-                            {/*            p: 2,*/}
-                            {/*            display: 'flex',*/}
-                            {/*            flexDirection: 'column',*/}
-                            {/*            height: 240,*/}
-                            {/*        }}*/}
-                            {/*    >*/}
-                            {/*        <Chart />*/}
-                            {/*    </Paper>*/}
-                            {/*</Grid>*/}
+                            <Grid item xs={12} md={8} lg={9}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        height: 240,
+                                    }}
+                                >
+                                    <Chart />
+                                </Paper>
+                            </Grid>
                             {/* Recent Deposits */}
-                            {/*<Grid item xs={12} md={4} lg={3}>*/}
-                            {/*    <Paper*/}
-                            {/*        sx={{*/}
-                            {/*            p: 2,*/}
-                            {/*            display: 'flex',*/}
-                            {/*            flexDirection: 'column',*/}
-                            {/*            height: 240,*/}
-                            {/*        }}*/}
-                            {/*    >*/}
-                            {/*        <Deposits />*/}
-                            {/*    </Paper>*/}
-                            {/*</Grid>*/}
+                            <Grid item xs={12} md={4} lg={3}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        height: 240,
+                                    }}
+                                >
+                                    <Deposits />
+                                </Paper>
+                            </Grid>
                             {/* Recent Orders */}
-                            {/*<Grid item xs={12}>*/}
-                            {/*    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>*/}
-                            {/*        <Orders />*/}
-                            {/*    </Paper>*/}
-                            {/*</Grid>*/}
+                            <Grid item xs={12}>
+                                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                                    <Orders />
+                                </Paper>
+                            </Grid>
                         </Grid>
                     </Container>
                 </Box>

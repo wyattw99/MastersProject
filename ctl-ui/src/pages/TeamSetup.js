@@ -64,7 +64,7 @@ export default function TeamSetup() {
             console.log("SUCCESS")
             console.log(localStorage.getItem("teamID"))
             console.log(localStorage.getItem("coachID"))
-            window.location.href = "/dashboard"
+            window.location.href = "/"
         }
         function createCoach() {
             axios.post("http://127.0.0.1:8000/external/newCoach", null, {

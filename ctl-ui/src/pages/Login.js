@@ -21,6 +21,7 @@ export default function LogIn() {
         })
             .then((response) => {
                 localStorage.setItem("csrfToken", response.data.csrf_token);
+                localStorage.setItem("userID", response.data.userId);
                 window.location.href = "/dashboard"
             }).catch(err => {
                 console.log(err);

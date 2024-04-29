@@ -22,11 +22,19 @@ export default function CreateAccount() {
         const isAthlete = data.get('accountTypeRadio') === 'athlete'
         function redirect() {
             console.log("SUCCESS")
+            console.log(isAthlete)
+            console.log(isCoach)
             console.log(localStorage.getItem("userID"))
-            if (isAthlete)
+            if (isAthlete) {
+                localStorage.setItem("athlete", true);
+                console.log("athlete")
                 window.location.href = "/athlete-setup"
-            if (isCoach)
+            }
+            if (isCoach) {
+                localStorage.setItem("athlete", false);
+                console.log("coach")
                 window.location.href = "/team-setup"
+            }
         }
 
         axios.post("http://127.0.0.1:8000/external/newUser", null, {

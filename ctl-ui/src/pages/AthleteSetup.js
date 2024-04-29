@@ -84,7 +84,7 @@ export default function AthleteSetup() {
         function redirect() {
             console.log("SUCCESS")
             console.log(localStorage.getItem("athleteID"))
-            window.location.href = "/dashboard"
+            window.location.href = "/"
         }
 
         axios.post("http://127.0.0.1:8000/external/newAthlete", null, {

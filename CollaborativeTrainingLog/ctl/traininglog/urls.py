@@ -51,8 +51,8 @@ urlpatterns = [
     path("removeAthleteFromGroup/<int:athleteID>/", views.removeAthleteFromGroup, name="removeFromGroup"),
     
     #urls for strava
-    # path("getStravaAccessToken",views.get_access_token, name="getToken"),
-    # path("exchangeToken", views.exchange_token, name="exchangeToken"),
+    path("getStravaAccessToken",views.getAccessToken, name="getToken"),
+    path("exchangeToken", views.exchangeToken, name="exchangeToken"),
     
     #urls for activities
     path("newActivity",views.createActivity, name="newActivity"),

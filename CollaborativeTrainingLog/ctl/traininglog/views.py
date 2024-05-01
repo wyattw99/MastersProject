@@ -139,7 +139,7 @@ def createAthlete(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
-
+@login_required
 def getAthlete(request, athleteID):
     if request.method == 'GET':
         athlete = Athlete.objects.get(athleteId=athleteID)

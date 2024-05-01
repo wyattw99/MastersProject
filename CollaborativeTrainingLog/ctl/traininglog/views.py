@@ -51,7 +51,7 @@ def logoutRequest(request):
     
         
 #calls for user
-@login_required
+@csrf_exempt
 def createUser(request):
     if request.method == 'POST':
         username = request.GET.get('username')
@@ -1079,7 +1079,7 @@ def createTeam(request):
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
     
-@login_required
+@csrf_exempt
 def getTeam(request, teamName):
     if request.method == 'GET':
         team = Team.objects.get(teamName=teamName)

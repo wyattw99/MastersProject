@@ -18,9 +18,13 @@ For convenience and utility, the proposed Collaborative Training Log web applica
 #### `npm install @mui/material @emotion/react @emotion/styled`
 #### `npm install @mui/icons-material`
 #### `npm install @mui/x-date-pickers`
+#### `npm install @mui/x-charts`
 
 #### Day.js
 #### `npm install dayjs`
+
+#### Axios
+#### `npm install axios`
 
 ### Templates
 

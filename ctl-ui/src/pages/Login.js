@@ -6,14 +6,45 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
+
+import axios from 'axios';
+
 export default function LogIn() {
     const handleSubmit = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
-        console.log({
-            username: data.get('username'),
-            password: data.get('password'),
-        });
+        function getUserInfo() {
+            axios.get(`http://127.0.0.1:8000/external/getUser/${localStorage.getItem('userID')}/`)
+                .then((response) => {
+                    console.log(response)
+                    if (response.status === 200) {
+                        localStorage.setItem("userID", response.data.id);
+                        localStorage.setItem("isAthlete", response.data.isAthlete);
+                    }
+                }).catch(err => {
+                    console.log(err);
+                });
+            console.log({
+                joinTeam: data.get('joinTeam')
+            });
+        }
+
+        axios.post("http://127.0.0.1:8000/external/login", null, {
+            params: {
+                username: data.get('username'),
+                password: data.get('password')
+            }
+        })
+            .then((response) => {
+                localStorage.setItem("csrfToken", response.data.csrf_token);
+                localStorage.setItem("userID", response.data.userId);
+                localStorage.setItem("athleteID", response.data.athleteId);
+                localStorage.setItem("coachID", response.data.coachId);
+                //getUserInfo()
+                window.location.href = "/dashboard"
+            }).catch(err => {
+                console.log(err);
+            });
     };
 
     return (
@@ -31,7 +62,7 @@ export default function LogIn() {
                 <Typography component="h1" variant="h5" sx={{ marginTop: 5 }}>
                     Log In
                 </Typography>
-                <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: 300 }}>
+                <Box component="form" onSubmit={handleSubmit} noValidate autoComplete="off" sx={{ mt: 1, width: 300 }}>
                     <TextField
                         margin="normal"
                         required
@@ -39,7 +70,6 @@ export default function LogIn() {
                         id="username"
                         label="Username"
                         name="username"
-                        autoComplete="off"
                     />
                     <TextField
                         margin="normal"
@@ -49,19 +79,19 @@ export default function LogIn() {
                         label="Password"
                         type="password"
                         id="password"
-                        autoComplete="new-password"
                     />
                     <Button
                         type="submit"
                         fullWidth
                         variant="contained"
                         color="light"
+
                         sx={{
                             mt: 3, mb: 2}}
                     >
                         Log In
                     </Button>
-                    <Divider variant="middle" sx={{ bgcolor: "#322B34" }} />
+                    <Divider>OR</Divider>
                     <Button
                         fullWidth
                         variant="contained"

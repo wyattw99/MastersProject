@@ -4,7 +4,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.middleware import csrf
-from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Activity, Run, Bike, Swim, Other, Comment
+from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Activity, Run, Bike, Swim, Other, Comment, StravaLogin
 from django.db.models import Q
 from django.utils import timezone
 from django.shortcuts import render, redirect
@@ -51,7 +51,7 @@ def logoutRequest(request):
     
         
 #calls for user
-@login_required
+@csrf_exempt
 def createUser(request):
     if request.method == 'POST':
         username = request.GET.get('username')
@@ -121,7 +121,7 @@ def deleteUser(request, userID):
 
 
 
-        
+     
 #calls for athlete  
 @login_required
 def createAthlete(request):
@@ -139,7 +139,7 @@ def createAthlete(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
-
+@login_required
 def getAthlete(request, athleteID):
     if request.method == 'GET':
         athlete = Athlete.objects.get(athleteId=athleteID)
@@ -426,11 +426,11 @@ def getCoachWorkouts(request,coachID):
             return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)    
-   
+  
 
 
 
-   
+  
 #calls for training groups
 @login_required
 def createTrainingGroup(request):
@@ -515,43 +515,50 @@ def removeAthleteFromGroup(request, athleteID):
 
 
 #calls for strava
-# @csrf_exempt
-# def get_access_token(request):
-#     # Redirect the user to Strava for authorization
-#     client_id = '98300'
-#     redirect_uri = 'http://localhost/exchange_token'  # This should match the redirect URI configured in your Strava app settings
-#     strava_auth_url = f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&approval_prompt=force&scope=read'
-#     return JsonResponse({'redirect_url': strava_auth_url})
+@csrf_exempt
+def getAccessToken(request):
+    # Redirect the user to Strava for authorization
+    clientId = '98300'
+    redirectURI = 'http://localhost/exchange_token'  # This should match the redirect URI configured in your Strava app settings
+    stravaAuthURL = f'http://www.strava.com/oauth/authorize?client_id={clientId}&response_type=code&redirect_uri={redirectURI}&approval_prompt=force&scope=read'
+    return JsonResponse({'redirectURL': stravaAuthURL})
 
-# @csrf_exempt
-# def exchange_token(request):
-#     # After user authorization, exchange authorization code for access token
-#     client_id = '98300'
-#     client_secret = '2c15fb7ebf1d3016e69f19c4d75eaabc855912f9'
-#     code = request.GET.get('code')
-#     athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
-#     token_url = 'https://www.strava.com/oauth/token'
-#     payload = {
-#         'client_id': client_id,
-#         'client_secret': client_secret,
-#         'code': code,
-#         'grant_type': 'authorization_code'
-#     }
-#     response = requests.post(token_url, data=payload)
-#     token_data = response.json()
-#     print(token_data)
+@csrf_exempt
+def exchangeToken(request):
+    # After user authorization, exchange authorization code for access token
+    clientId = '98300'
+    clientSecret = '2c15fb7ebf1d3016e69f19c4d75eaabc855912f9'
+    code = request.GET.get('code')
+    athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
+    tokenUrl = 'https://www.strava.com/oauth/token'
+    payload = {
+        'client_id': clientId,
+        'client_secret': clientSecret,
+        'code': code,
+        'grant_type': 'authorization_code'
+    }
+    response = requests.post(tokenUrl, data=payload)
+    tokenData = response.json()
+    athleteData = tokenData['athlete']
+    stravaID = athleteData['id']
+    stravaUserName = athleteData['username']
+    stravaTokenType = tokenData['token_type']
+    stravaExpiration = tokenData['expires_at']
+    stravaRefreshToken = tokenData['refresh_token']
+    stravaAccessToken = tokenData['access_token']
+    newStravaLogin = StravaLogin.objects.create(stravaUserName=stravaUserName, stravaID=stravaID, stravaTokenType=stravaTokenType, 
+                                                stravaExpiration=stravaExpiration, stravaRefreshToken=stravaRefreshToken, stravaAccessToken=stravaAccessToken)
+    newStravaLogin.save()
+    athlete.stravaLogin = newStravaLogin
     
-#     # Assuming token_data contains the access token, you can now use it to make requests to the Strava API
-#     access_token = token_data['access_token']
+    
+    profileUrl = 'https://www.strava.com/api/v3/athlete'
+    headers = {'Authorization': f'Bearer {stravaAccessToken}'}
+    profileResponse = requests.get(profileUrl, headers=headers)
+    profileData = profileResponse.json()
 
-#     # Now, you can make a request to get profile information
-#     profile_url = 'https://www.strava.com/api/v3/athlete'
-#     headers = {'Authorization': f'Bearer {access_token}'}
-#     profile_response = requests.get(profile_url, headers=headers)
-#     profile_data = profile_response.json()
-
-#     # Do something with the profile_data, like displaying it in a template
-#     return JsonResponse(profile_data)
+    # Do something with the profile_data, like displaying it in a template
+    return JsonResponse(profileData)
 
 
 
@@ -802,6 +809,9 @@ def updateActivity(request, activityID):
         return JsonResponse({'error': 'Only PUT requests are allowed'}, status=405)
 
 
+
+
+
 #calls for comments
 @login_required
 def createComment(request):
@@ -870,7 +880,7 @@ def getComments(request, activityID):
          return JsonResponse({'error': str(e)}, status=500)
  else:
      return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
-    
+
 
 
 
@@ -983,6 +993,7 @@ def getAthleteStats(request, athleteID):
 
 
 
+
 #calls for rosters
 @login_required
 def addAthleteToTeam(request, athleteID):
@@ -1068,7 +1079,7 @@ def createTeam(request):
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
     
-@login_required
+@csrf_exempt
 def getTeam(request, teamName):
     if request.method == 'GET':
         team = Team.objects.get(teamName=teamName)

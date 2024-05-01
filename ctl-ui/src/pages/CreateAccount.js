@@ -49,9 +49,10 @@ export default function CreateAccount() {
             }
         })
             .then((response) => {
-                localStorage.setItem("userID", response.data.userId);
                 console.log(response)
                 if (response.status === 200) {
+                    localStorage.setItem("userID", response.data.userId);
+                    localStorage.setItem("name", data.get('firstName'));
                     redirect();
                 }
             }).catch(err => {

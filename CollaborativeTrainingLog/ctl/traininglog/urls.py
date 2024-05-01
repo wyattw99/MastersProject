@@ -13,6 +13,7 @@ app_name='traininglog'
 
 urlpatterns = [
     path("login",views.loginRequest, name="login"),
+    path("logout", views.logoutRequest, name="logout"),
     
     #urls for users
     path("newUser",views.createUser, name="newUser"),
@@ -39,6 +40,8 @@ urlpatterns = [
     path("editWorkout/<int:workoutID>/", views.editWorkout, name="editWorkout"),
     path("copyWorkout/<int:workoutID>/", views.copyWorkout, name="copyWorkout"),
     path("deleteWorkout/<int:workoutID>/",views.deleteWorkout, name="deleteWorkout"),
+    path("getWorkoutsRange/<int:athleteID>/",views.getAthleteWorkouts, name="getWorkoutsRange"),
+    path("getCoachWorkoutsRange/<int:coachID>/",views.getCoachWorkouts, name="getCoachWorkoutsRange"),
     
     #urls for training groups
     path("newTrainingGroup",views.createTrainingGroup, name="newGroup"),
@@ -48,6 +51,8 @@ urlpatterns = [
     path("removeAthleteFromGroup/<int:athleteID>/", views.removeAthleteFromGroup, name="removeFromGroup"),
     
     #urls for strava
+    # path("getStravaAccessToken",views.get_access_token, name="getToken"),
+    # path("exchangeToken", views.exchange_token, name="exchangeToken"),
     
     #urls for activities
     path("newActivity",views.createActivity, name="newActivity"),
@@ -55,6 +60,7 @@ urlpatterns = [
     path("getActivity/<int:activityID>/", views.getActivity, name="getActivity"),
     path("deleteActivity/<int:activityID>/",views.deleteActivity, name="deleteActivity"),
     path("editActivity/<int:activityID>/",views.updateActivity, name="updateActivity"),
+    path("getAthleteActivitiesRange/<int:athleteID>/", views.getAthleteActivitiesRange, name="activityRange"),
     
     #urls for comments
     path("createComment",views.createComment, name="createComment"),

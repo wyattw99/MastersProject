@@ -91,9 +91,10 @@ export default function TeamSetup() {
                 }
             })
                 .then((response) => {
-                    localStorage.setItem("teamID", response.data.teamId);
                     console.log(response)
                     if (response.status === 200) {
+                        localStorage.setItem("teamID", data.get('teamName'));
+                        localStorage.setItem("teamID", response.data.teamId);
                         createCoach();
                     }
                 }).catch(err => {
@@ -104,6 +105,17 @@ export default function TeamSetup() {
             });
         }
         else {
+            axios.get(`http://127.0.0.1:8000/external/getTeam/${data.get('joinTeam')}/`)
+                .then((response) => {
+                    console.log(response)
+                    if (response.status === 200) {
+                        localStorage.setItem("teamID", data.get('joinName'));
+                        localStorage.setItem("teamID", response.data.teamId);
+                        createCoach();
+                    }
+                }).catch(err => {
+                    console.log(err);
+                });
             console.log({
                 joinTeam: data.get('joinTeam')
             });

@@ -1,10 +1,14 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.middleware import csrf
 from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Activity, Run, Bike, Swim, Other, Comment
 from django.db.models import Q
 from django.utils import timezone
+from django.shortcuts import render, redirect
+import requests
 
 # Create your views here.
 @csrf_exempt
@@ -17,7 +21,15 @@ def loginRequest(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            response = JsonResponse({'message': 'Login successful', 'userId': user.id})
+            if user.isAthlete is True and user.isCoach is True:
+                response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'athleteId': user.athleteProfile.athleteId, 'coachId': user.coachProfile.coachId})
+            elif user.isAthlete is True:
+                response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'athleteId': user.athleteProfile.athleteId})
+            elif user.isCoach is True:
+                response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'coachId': user.coachProfile.coachId})
+            else:
+                response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'login message': 'admin login'})
+            
             print(response)
             return response
           
@@ -26,12 +38,20 @@ def loginRequest(request):
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
     
-        
-    
+@csrf_exempt
+def logoutRequest(request):
+    if request.method == 'POST':
+        try:
+            logout(request)
+            return JsonResponse({'message': 'Logout successful'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
     
         
 #calls for user
-@csrf_exempt
+@login_required
 def createUser(request):
     if request.method == 'POST':
         username = request.GET.get('username')
@@ -53,7 +73,7 @@ def createUser(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
     
-#@csrf_exempt
+@login_required
 def getUser(request, userID):
     if request.method == 'GET':
         user = User.objects.get(id=userID)
@@ -71,7 +91,7 @@ def getUser(request, userID):
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def updateUser(request, userID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
@@ -86,7 +106,7 @@ def updateUser(request, userID):
     else:
         return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
 
-@csrf_exempt
+@login_required
 def deleteUser(request, userID):
     if request.method == 'DELETE':
         try:
@@ -103,7 +123,7 @@ def deleteUser(request, userID):
 
         
 #calls for athlete  
-@csrf_exempt
+@login_required
 def createAthlete(request):
     if request.method == 'POST':
         birthday = request.GET.get('birthday')
@@ -119,7 +139,7 @@ def createAthlete(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
-@csrf_exempt
+
 def getAthlete(request, athleteID):
     if request.method == 'GET':
         athlete = Athlete.objects.get(athleteId=athleteID)
@@ -143,7 +163,7 @@ def getAthlete(request, athleteID):
     else:
         return JsonResponse({'message': 'Athlete does not exist'}, status=405)
     
-@csrf_exempt
+@login_required
 def updateAthlete(request, athleteID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
@@ -157,7 +177,7 @@ def updateAthlete(request, athleteID):
     else:
         return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def deleteAthlete(request, athleteID):
     if request.method == 'DELETE':
         try:
@@ -174,7 +194,7 @@ def deleteAthlete(request, athleteID):
 
 
 #calls for coach
-@csrf_exempt
+@login_required
 def createCoach(request):
     if request.method == 'POST':
         userId = request.GET.get('userId')
@@ -190,7 +210,7 @@ def createCoach(request):
     else:
         return JsonResponse({'message', 'Only POST requests are allowed'}, status=405)
 
-@csrf_exempt
+@login_required
 def getCoach(request, coachID):
     if request.method == 'GET':
         coach = Coach.objects.get(coachId=coachID)
@@ -207,7 +227,7 @@ def getCoach(request, coachID):
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def deleteCoach(request, coachID):
     if request.method == 'DELETE':
         try:
@@ -224,7 +244,7 @@ def deleteCoach(request, coachID):
 
     
 #calls for workouts
-@csrf_exempt
+@login_required
 def createWorkout(request):
     if request.method == 'POST':
         coachID = request.GET.get("coachID")
@@ -241,7 +261,7 @@ def createWorkout(request):
     else:
         return JsonResponse({'message', 'Only POST requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def assignToAthletes(request):
     if request.method == 'PUT':
         workout = Workout.objects.get(workoutId = request.GET.get("workoutID"))
@@ -262,7 +282,7 @@ def assignToAthletes(request):
     else:
         return JsonResponse({'message', 'Only Put requests are allowed'}, status=405)
 
-@csrf_exempt
+@login_required
 def getWorkout(request, workoutID):
     if request.method == 'GET':
         try:
@@ -289,7 +309,7 @@ def getWorkout(request, workoutID):
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def removeAthleteFromWorkout(request, workoutID):
     if request.method == 'PUT':
         workout = Workout.objects.get(workoutId=workoutID)
@@ -303,7 +323,7 @@ def removeAthleteFromWorkout(request, workoutID):
         else:
             return JsonResponse({'message', 'Only PUT requests are allowed'}, status=405)
         
-@csrf_exempt
+@login_required
 def editWorkout(request, workoutID):
     if request.method == 'PUT' or request.method == 'POST':
         try:
@@ -318,7 +338,7 @@ def editWorkout(request, workoutID):
     else:
         return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def copyWorkout(request, workoutID):
     if request.method == 'POST':
         workout = Workout.objects.get(workoutId = workoutID)
@@ -334,7 +354,7 @@ def copyWorkout(request, workoutID):
     else:
         return JsonResponse({'message', 'Only POST requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def deleteWorkout(request, workoutID):
     if request.method == 'DELETE':
         try:
@@ -345,13 +365,74 @@ def deleteWorkout(request, workoutID):
             return JsonResponse({'error': str(e)}, status=500)
     else:
        return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405) 
+   
+@login_required
+def getAthleteWorkouts(request,athleteID):
+    if request.method == 'GET':
+        athlete = Athlete.objects.get(athleteId=athleteID)
         
+        rangeStart = request.GET.get("rangeStart")
+        rangeEnd = request.GET.get("rangeEnd")
+        workoutData= {}
+        
+        try:
+            dateFilter = Q(assignedDate__range=(rangeStart, rangeEnd))|Q(assignedDate=rangeEnd)
+            workouts = athlete.assignedWorkouts.filter(dateFilter).order_by('assignedDate')
+            workoutData = [{
+                'workoutID': workout.workoutId,
+                'title': workout.title,
+                'description': workout.description,
+                'assignedDate': workout.assignedDate,
+                'coachID': workout.coach.coachId 
+                } for workout in workouts]
+            assignedWorkouts = {
+                'assignedWorkouts': workoutData
+            }
+            return JsonResponse(assignedWorkouts)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+        
+@login_required
+def getCoachWorkouts(request,coachID):
+    if request.method == 'GET':
+        coach = Coach.objects.get(coachId=coachID)
+        
+        rangeStart = request.GET.get("rangeStart")
+        rangeEnd = request.GET.get("rangeEnd")
+        workoutData= {}
+        
+        try:
+            dateFilter = Q(assignedDate__range=(rangeStart, rangeEnd))
+            workouts = coach.createdWorkouts.filter(dateFilter).order_by('assignedDate')
+            workoutData = [{
+                'workoutID': workout.workoutId,
+                'title': workout.title,
+                'description': workout.description,
+                'assignedDate': workout.assignedDate,
+                'coachID': workout.coach.coachId,
+                'assignedAthletes': [{
+                    'athleteID' : athlete.athleteId,
+                    'firstName': athlete.user.first_name,
+                    'lastName': athlete.user.last_name
+                } for athlete in workout.athletes.all()]
+            } for workout in workouts]
+            assignedWorkouts = {
+                'assignedWorkouts': workoutData
+            }
+            return JsonResponse(assignedWorkouts)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)    
    
-    
+
+
+
    
-    
 #calls for training groups
-@csrf_exempt
+@login_required
 def createTrainingGroup(request):
     if request.method == 'POST':
         groupName = request.GET.get('groupName')
@@ -365,7 +446,7 @@ def createTrainingGroup(request):
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def getTrainingGroup(request, groupID):
     if request.method == 'GET':
         group = TrainingGroup.objects.get(groupId=groupID)
@@ -391,7 +472,7 @@ def getTrainingGroup(request, groupID):
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def deleteTrainingGroup(request, groupID):
     if request.method == 'DELETE':
         try:
@@ -403,7 +484,7 @@ def deleteTrainingGroup(request, groupID):
     else:
         return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def addAthleteToGroup(request, athleteID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
@@ -416,7 +497,7 @@ def addAthleteToGroup(request, athleteID):
     else:
         return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
 
-@csrf_exempt
+@login_required
 def removeAthleteFromGroup(request, athleteID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
@@ -434,13 +515,49 @@ def removeAthleteFromGroup(request, athleteID):
 
 
 #calls for strava
+# @csrf_exempt
+# def get_access_token(request):
+#     # Redirect the user to Strava for authorization
+#     client_id = '98300'
+#     redirect_uri = 'http://localhost/exchange_token'  # This should match the redirect URI configured in your Strava app settings
+#     strava_auth_url = f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&approval_prompt=force&scope=read'
+#     return JsonResponse({'redirect_url': strava_auth_url})
 
+# @csrf_exempt
+# def exchange_token(request):
+#     # After user authorization, exchange authorization code for access token
+#     client_id = '98300'
+#     client_secret = '2c15fb7ebf1d3016e69f19c4d75eaabc855912f9'
+#     code = request.GET.get('code')
+#     athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
+#     token_url = 'https://www.strava.com/oauth/token'
+#     payload = {
+#         'client_id': client_id,
+#         'client_secret': client_secret,
+#         'code': code,
+#         'grant_type': 'authorization_code'
+#     }
+#     response = requests.post(token_url, data=payload)
+#     token_data = response.json()
+#     print(token_data)
+    
+#     # Assuming token_data contains the access token, you can now use it to make requests to the Strava API
+#     access_token = token_data['access_token']
+
+#     # Now, you can make a request to get profile information
+#     profile_url = 'https://www.strava.com/api/v3/athlete'
+#     headers = {'Authorization': f'Bearer {access_token}'}
+#     profile_response = requests.get(profile_url, headers=headers)
+#     profile_data = profile_response.json()
+
+#     # Do something with the profile_data, like displaying it in a template
+#     return JsonResponse(profile_data)
 
 
 
 
 #calls for activities
-@csrf_exempt
+@login_required
 def createActivity(request):
     if request.method == 'POST':
         athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
@@ -522,7 +639,51 @@ def createActivity(request):
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)  
     
-@csrf_exempt
+@login_required
+def getAthleteActivitiesRange(request, athleteID):
+    if request.method == 'GET':
+        athlete = Athlete.objects.get(athleteId=athleteID)
+        
+        activityType = request.GET.get("activityType")
+        rangeStart = request.GET.get("rangeStart")
+        rangeEnd = request.GET.get("rangeEnd")
+        bikeData = {}
+        runData = {}
+        swimData = {}
+        otherData = {}
+        
+        try:
+            dateFilter = Q(startDate__gte=rangeStart, startDate__lte=rangeEnd) | Q(startDate__date=rangeEnd)
+            bikeActivities = athlete.bikes.filter(dateFilter).order_by('startDate')
+            bikeData = [str(activity) for activity in bikeActivities]
+            runActivities = athlete.runs.filter(dateFilter).order_by('startDate')
+            runData = [str(activity) for activity in runActivities]
+            swimActivities =  athlete.swims.filter(dateFilter).order_by('startDate')
+            swimData = [str(activity) for activity in swimActivities]
+            otherActivities =  athlete.otherActivites.filter(dateFilter).order_by('startDate')
+            otherData = [str(activity) for activity in otherActivities]
+            if activityType == "bike":
+                return JsonResponse({'bikeData': bikeData})
+            elif activityType == "run":
+               return JsonResponse({'runData': runData})
+            elif activityType == "swim":
+              return JsonResponse({'swimData': swimData})
+            elif activityType == "other":
+               return JsonResponse({'otherData': otherData})
+            else:
+                allActivitiesData = {
+                'bikeData': bikeData,
+                'runData': runData,
+                'swimData': swimData,
+                'otherData': otherData
+                }
+                return JsonResponse(allActivitiesData)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+    
+@login_required
 def getAthleteActivities(request, athleteID):
     if request.method == 'GET':
         athlete = Athlete.objects.get(athleteId=athleteID)
@@ -558,7 +719,7 @@ def getAthleteActivities(request, athleteID):
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
         
-@csrf_exempt
+@login_required
 def getActivity(request,activityID):
     if request.method == 'GET':
         activityType = request.GET.get("activityType")
@@ -579,7 +740,7 @@ def getActivity(request,activityID):
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def deleteActivity(request,activityID):
     if request.method == 'DELETE':
         
@@ -600,7 +761,7 @@ def deleteActivity(request,activityID):
     else:
         return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405)
 
-@csrf_exempt
+@login_required
 def updateActivity(request, activityID):
     if request.method == 'PUT':
         activityType = request.GET.get("activityType")
@@ -642,6 +803,7 @@ def updateActivity(request, activityID):
 
 
 #calls for comments
+@login_required
 def createComment(request):
     if request.method == 'POST':
         activityType = request.GET.get('activityType')
@@ -671,7 +833,7 @@ def createComment(request):
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405) 
     
-@csrf_exempt
+@login_required
 def deleteComment(request, commentID):
     if request.method == 'DELETE':
         try:
@@ -683,7 +845,7 @@ def deleteComment(request, commentID):
     else:
         return JsonResponse({'message': 'Only DELETE requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def getComments(request, activityID):
  if request.method == 'GET':
      activityType = request.GET.get("activityType")
@@ -714,7 +876,7 @@ def getComments(request, activityID):
 
 
 #calls for getting stats
-@csrf_exempt
+@login_required
 def getAthleteStats(request, athleteID):
     if request.method == 'GET':
         athlete = Athlete.objects.get(athleteId=athleteID)
@@ -822,7 +984,7 @@ def getAthleteStats(request, athleteID):
 
 
 #calls for rosters
-@csrf_exempt
+@login_required
 def addAthleteToTeam(request, athleteID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
@@ -835,7 +997,7 @@ def addAthleteToTeam(request, athleteID):
     else:
         return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def approveAthlete(request, athleteID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
@@ -848,7 +1010,7 @@ def approveAthlete(request, athleteID):
     else:
         return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def removeAthleteFromTeam(request, athleteID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
@@ -862,7 +1024,7 @@ def removeAthleteFromTeam(request, athleteID):
     else:
         return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def viewRoster(request, teamID):
     if request.method == 'GET':
         team = Team.objects.get(teamId=teamID)
@@ -893,7 +1055,7 @@ def viewRoster(request, teamID):
 
 
 #calls for teams
-@csrf_exempt
+@login_required
 def createTeam(request):
     if request.method == 'POST':
         teamName = request.GET.get('teamName')
@@ -906,7 +1068,7 @@ def createTeam(request):
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def getTeam(request, teamName):
     if request.method == 'GET':
         team = Team.objects.get(teamName=teamName)
@@ -932,7 +1094,7 @@ def getTeam(request, teamName):
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
-@csrf_exempt
+@login_required
 def deleteTeam(request, teamID):
     if request.method == 'DELETE':
         try:

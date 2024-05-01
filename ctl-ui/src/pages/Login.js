@@ -13,6 +13,22 @@ export default function LogIn() {
     const handleSubmit = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
+        function getUserInfo() {
+            axios.get(`http://127.0.0.1:8000/external/getUser/${localStorage.getItem('userID')}/`)
+                .then((response) => {
+                    console.log(response)
+                    if (response.status === 200) {
+                        localStorage.setItem("userID", response.data.id);
+                        localStorage.setItem("isAthlete", response.data.isAthlete);
+                    }
+                }).catch(err => {
+                    console.log(err);
+                });
+            console.log({
+                joinTeam: data.get('joinTeam')
+            });
+        }
+
         axios.post("http://127.0.0.1:8000/external/login", null, {
             params: {
                 username: data.get('username'),
@@ -22,6 +38,9 @@ export default function LogIn() {
             .then((response) => {
                 localStorage.setItem("csrfToken", response.data.csrf_token);
                 localStorage.setItem("userID", response.data.userId);
+                localStorage.setItem("athleteID", response.data.athleteId);
+                localStorage.setItem("coachID", response.data.coachId);
+                //getUserInfo()
                 window.location.href = "/dashboard"
             }).catch(err => {
                 console.log(err);

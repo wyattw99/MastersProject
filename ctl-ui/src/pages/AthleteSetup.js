@@ -95,9 +95,9 @@ export default function AthleteSetup() {
             }
         })
             .then((response) => {
-                localStorage.setItem("athleteID", response.data.athleteId);
                 console.log(response)
                 if (response.status === 200) {
+                    localStorage.setItem("athleteID", response.data.athleteId);
                     redirect();
                 }
             }).catch(err => {

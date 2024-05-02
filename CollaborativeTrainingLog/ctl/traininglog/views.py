@@ -78,18 +78,20 @@ def createUser(request):
 @login_required
 def getUser(request, userID):
     if request.method == 'GET':
-        user = User.objects.get(id=userID)
-        userData = {
-                'id': user.id,
-                'username': user.username,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'email': user.email,
-                'isCoach': user.isCoach,
-                'isAthlete': user.isAthlete,
-            }
-            
-        return JsonResponse(userData)
+        try:
+            user = User.objects.get(id=userID)
+            userData = {
+                    'id': user.id,
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'isCoach': user.isCoach,
+                    'isAthlete': user.isAthlete,
+                }
+            return JsonResponse(userData)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
@@ -144,24 +146,27 @@ def createAthlete(request):
 @login_required
 def getAthlete(request, athleteID):
     if request.method == 'GET':
-        athlete = Athlete.objects.get(athleteId=athleteID)
-        if athlete.team is None:
-            athleteData = {
-                    'id': athlete.athleteId,
-                    'birthday': athlete.birthday,
-                    'schoolYear': athlete.schoolYear,
-                    'teamID': athlete.team,
-                    'userID': athlete.user.id
-                }
-        else:
-            athleteData = {
-                    'id': athlete.athleteId,
-                    'birthday': athlete.birthday,
-                    'schoolYear': athlete.schoolYear,
-                    'teamID': athlete.team.teamId,
-                    'userID': athlete.user.id
-                }
-        return JsonResponse(athleteData)
+        try:
+            athlete = Athlete.objects.get(athleteId=athleteID)
+            if athlete.team is None:
+                athleteData = {
+                        'id': athlete.athleteId,
+                        'birthday': athlete.birthday,
+                        'schoolYear': athlete.schoolYear,
+                        'teamID': athlete.team,
+                        'userID': athlete.user.id
+                    }
+            else:
+                athleteData = {
+                        'id': athlete.athleteId,
+                        'birthday': athlete.birthday,
+                        'schoolYear': athlete.schoolYear,
+                        'teamID': athlete.team.teamId,
+                        'userID': athlete.user.id
+                    }
+            return JsonResponse(athleteData)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'message': 'Athlete does not exist'}, status=405)
     
@@ -215,17 +220,20 @@ def createCoach(request):
 @login_required
 def getCoach(request, coachID):
     if request.method == 'GET':
-        coach = Coach.objects.get(coachId=coachID)
-        user = coach.user
-        userID = user.id
-        team = coach.team
-        teamID = team.teamId
-        coachData = {
-                'id': coach.coachId,
-                'teamID': teamID,
-                'userID': userID,
-            }
-        return JsonResponse(coachData)
+        try:
+            coach = Coach.objects.get(coachId=coachID)
+            user = coach.user
+            userID = user.id
+            team = coach.team
+            teamID = team.teamId
+            coachData = {
+                    'id': coach.coachId,
+                    'teamID': teamID,
+                    'userID': userID,
+                }
+            return JsonResponse(coachData)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
@@ -1094,7 +1102,10 @@ def createTeam(request):
 @csrf_exempt
 def getTeam(request, teamName):
     if request.method == 'GET':
-        team = Team.objects.get(teamName=teamName)
+        try:
+            team = Team.objects.get(teamName=teamName)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
         try:
             coaches = Coach.objects.filter(team=team)
             coachData = [{

@@ -10,6 +10,8 @@ from django.utils import timezone
 from django.shortcuts import render, redirect
 import requests
 
+
+
 # Create your views here.
 @csrf_exempt
 def loginRequest(request):
@@ -123,7 +125,7 @@ def deleteUser(request, userID):
 
      
 #calls for athlete  
-@login_required
+@csrf_exempt
 def createAthlete(request):
     if request.method == 'POST':
         birthday = request.GET.get('birthday')
@@ -194,7 +196,7 @@ def deleteAthlete(request, athleteID):
 
 
 #calls for coach
-@login_required
+@csrf_exempt
 def createCoach(request):
     if request.method == 'POST':
         userId = request.GET.get('userId')
@@ -517,10 +519,10 @@ def removeAthleteFromGroup(request, athleteID):
 #calls for strava
 @csrf_exempt
 def getAccessToken(request):
-    # Redirect the user to Strava for authorization
+    scopes = 'activity:read_all'
     clientId = '98300'
-    redirectURI = 'http://localhost/exchange_token'  # This should match the redirect URI configured in your Strava app settings
-    stravaAuthURL = f'http://www.strava.com/oauth/authorize?client_id={clientId}&response_type=code&redirect_uri={redirectURI}&approval_prompt=force&scope=read'
+    redirectURI = 'http://localhost/exchange_token'
+    stravaAuthURL = f'http://www.strava.com/oauth/authorize?client_id={clientId}&response_type=code&redirect_uri={redirectURI}&approval_prompt=force&scope={scopes}'
     return JsonResponse({'redirectURL': stravaAuthURL})
 
 @csrf_exempt
@@ -537,20 +539,25 @@ def exchangeToken(request):
         'code': code,
         'grant_type': 'authorization_code'
     }
-    response = requests.post(tokenUrl, data=payload)
-    tokenData = response.json()
-    athleteData = tokenData['athlete']
-    stravaID = athleteData['id']
-    stravaUserName = athleteData['username']
-    stravaTokenType = tokenData['token_type']
-    stravaExpiration = tokenData['expires_at']
-    stravaRefreshToken = tokenData['refresh_token']
-    stravaAccessToken = tokenData['access_token']
-    newStravaLogin = StravaLogin.objects.create(stravaUserName=stravaUserName, stravaID=stravaID, stravaTokenType=stravaTokenType, 
-                                                stravaExpiration=stravaExpiration, stravaRefreshToken=stravaRefreshToken, stravaAccessToken=stravaAccessToken)
-    newStravaLogin.save()
-    athlete.stravaLogin = newStravaLogin
-    
+    try:
+        response = requests.post(tokenUrl, data=payload)
+        tokenData = response.json()
+        #print(tokenData)
+        athleteData = tokenData['athlete']
+        stravaID = athleteData['id']
+        stravaUserName = athleteData['username']
+        stravaTokenType = tokenData['token_type']
+        stravaExpiration = tokenData['expires_at']
+        stravaRefreshToken = tokenData['refresh_token']
+        stravaAccessToken = tokenData['access_token']
+        newStravaLogin = StravaLogin.objects.create(stravaUserName=stravaUserName, stravaID=stravaID, stravaTokenType=stravaTokenType, 
+                                                    stravaExpiration=stravaExpiration, stravaRefreshToken=stravaRefreshToken, stravaAccessToken=stravaAccessToken)
+        newStravaLogin.save()
+        athlete.stravaLogin = newStravaLogin
+        athlete.save()
+    except Exception as e:
+        return JsonResponse({'error': str(e), 'stravaResponse': tokenData}, status=500)
+
     
     profileUrl = 'https://www.strava.com/api/v3/athlete'
     headers = {'Authorization': f'Bearer {stravaAccessToken}'}
@@ -560,7 +567,12 @@ def exchangeToken(request):
     # Do something with the profile_data, like displaying it in a template
     return JsonResponse(profileData)
 
-
+# @csrf_exempt
+# def getStravaActivities(request):
+#     athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
+#     stravaLogin = athlete.stravaLogin
+    
+  
 
 
 #calls for activities
@@ -1066,7 +1078,7 @@ def viewRoster(request, teamID):
 
 
 #calls for teams
-@login_required
+@csrf_exempt
 def createTeam(request):
     if request.method == 'POST':
         teamName = request.GET.get('teamName')

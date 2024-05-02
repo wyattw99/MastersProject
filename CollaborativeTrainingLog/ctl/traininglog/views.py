@@ -9,10 +9,18 @@ from django.db.models import Q
 from django.utils import timezone
 from django.shortcuts import render, redirect
 import requests
+from datetime import datetime
+import time
 
 
 
 # Create your views here.
+@csrf_exempt
+def getCookies(request):
+    cookies = request.COOKIES
+    print(cookies)
+    return JsonResponse({'cookies': cookies})
+
 @csrf_exempt
 def loginRequest(request):
     if request.method == 'POST':
@@ -575,12 +583,25 @@ def exchangeToken(request):
     # Do something with the profile_data, like displaying it in a template
     return JsonResponse(profileData)
 
-# @csrf_exempt
-# def getStravaActivities(request):
-#     athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
-#     stravaLogin = athlete.stravaLogin
+@csrf_exempt
+def getStravaActivities(request):
+    activitiesData = {}
+    try:
+        athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
+        stravaLogin = athlete.stravaLogin
+        rangeStart = datetime.strptime(request.GET.get('rangeStart'),"%Y-%m-%d")
+        rangeEnd = datetime.strptime(request.GET.get('rangeEnd'),"%Y-%m-%d")
+        epochStart = time.mktime(rangeStart.timetuple())
+        epochEnd = time.mktime(rangeEnd.timetuple())
+        activitiesUrl = f'https://www.strava.com/api/v3/athlete/activities?before={epochEnd}&after={epochStart}&page=1&per_page=56"'
+        stravaAccessToken = stravaLogin.stravaAccessToken
+        headers = {'Authorization': f'Bearer {stravaAccessToken}'}
+        activitiesResponse = requests.get(activitiesUrl, headers=headers)
+        activitiesData = activitiesResponse.json()
+        return JsonResponse(activitiesData)
+    except Exception as e:
+        return JsonResponse({'error': str(e), 'stravaResponse': activitiesData}, status=500)
     
-  
 
 
 #calls for activities

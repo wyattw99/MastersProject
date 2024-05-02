@@ -14,6 +14,7 @@ app_name='traininglog'
 urlpatterns = [
     path("login",views.loginRequest, name="login"),
     path("logout", views.logoutRequest, name="logout"),
+    path("cookies",views.getCookies, name='cookies'),
     
     #urls for users
     path("newUser",views.createUser, name="newUser"),
@@ -53,6 +54,7 @@ urlpatterns = [
     #urls for strava
     path("getStravaAccessToken",views.getAccessToken, name="getToken"),
     path("exchangeToken", views.exchangeToken, name="exchangeToken"),
+    path("getStravaActivities", views.getStravaActivities, name="getStravaActivities"),
     
     #urls for activities
     path("newActivity",views.createActivity, name="newActivity"),

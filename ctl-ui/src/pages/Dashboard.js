@@ -124,7 +124,7 @@ export default function Dashboard() {
                                     <Chart />
                                 </Paper>
                             </Grid>
-                            {/* Recent Deposits */}
+                            {/* */}
                             <Grid item xs={12} md={4} lg={3}>
                                 <Paper
                                     sx={{
@@ -137,10 +137,19 @@ export default function Dashboard() {
                                     <Deposits />
                                 </Paper>
                             </Grid>
-                            {/* Recent Orders */}
+                            {/* */}
                             <Grid item xs={12}>
                                 <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                                    <Orders />
+                                    {/*<Orders />*/}
+                                    <Button
+                                        onClick={() => handleClick}
+                                        type="submit"
+                                        fullWidth
+                                        variant="contained"
+                                        sx={{ mt: 3 }}
+                                    >
+                                        Test Token
+                                    </Button>
                                 </Paper>
                             </Grid>
                         </Grid>

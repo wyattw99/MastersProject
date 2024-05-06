@@ -97,7 +97,13 @@ def getUser(request, userID):
                     'isCoach': user.isCoach,
                     'isAthlete': user.isAthlete,
                 }
-            return JsonResponse(userData)
+            if user.isCoach:
+                return JsonResponse({'userData': userData, 'coachId': user.coachProfile.coachId, 'teamId': user.coachProfile.team})
+            elif user.isAthlete:
+                return JsonResponse({'userData': userData, 'coachId': user.athleteProfile.athleteId, 'athleteId': user.athleteProfile.team})
+            else:
+                return JsonResponse(userData)
+        
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:

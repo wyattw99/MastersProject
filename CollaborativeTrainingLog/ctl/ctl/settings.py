@@ -54,6 +54,8 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+SESSION_COOKIE_HTTPONLY = False
+
 #LOGIN_URL = '/accounts/login/' will need to update 
 
 ROOT_URLCONF = "ctl.urls"

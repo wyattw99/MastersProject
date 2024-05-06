@@ -555,33 +555,41 @@ def exchangeToken(request):
         'code': code,
         'grant_type': 'authorization_code'
     }
-    try:
-        response = requests.post(tokenUrl, data=payload)
-        tokenData = response.json()
-        #print(tokenData)
-        athleteData = tokenData['athlete']
-        stravaID = athleteData['id']
-        stravaUserName = athleteData['username']
-        stravaTokenType = tokenData['token_type']
-        stravaExpiration = tokenData['expires_at']
-        stravaRefreshToken = tokenData['refresh_token']
-        stravaAccessToken = tokenData['access_token']
-        newStravaLogin = StravaLogin.objects.create(stravaUserName=stravaUserName, stravaID=stravaID, stravaTokenType=stravaTokenType, 
-                                                    stravaExpiration=stravaExpiration, stravaRefreshToken=stravaRefreshToken, stravaAccessToken=stravaAccessToken)
-        newStravaLogin.save()
-        athlete.stravaLogin = newStravaLogin
-        athlete.save()
-    except Exception as e:
-        return JsonResponse({'error': str(e), 'stravaResponse': tokenData}, status=500)
-
+    tokenData = {}
+    if athlete.stravaLogin is None:
+        try:
+            response = requests.post(tokenUrl, data=payload)
+            tokenData = response.json()
+            #print(tokenData)
+            athleteData = tokenData['athlete']
+            stravaID = athleteData['id']
+            stravaUserName = athleteData['username']
+            stravaTokenType = tokenData['token_type']
+            stravaExpiration = tokenData['expires_at']
+            stravaRefreshToken = tokenData['refresh_token']
+            stravaAccessToken = tokenData['access_token']
+            newStravaLogin = StravaLogin.objects.create(stravaUserName=stravaUserName, stravaID=stravaID, stravaTokenType=stravaTokenType, 
+                                                        stravaExpiration=stravaExpiration, stravaRefreshToken=stravaRefreshToken, stravaAccessToken=stravaAccessToken)
+            newStravaLogin.save()
+            athlete.stravaLogin = newStravaLogin
+            athlete.save()
+            return JsonResponse({'message':'Strava Profile Linked'})
+        except Exception as e:
+            return JsonResponse({'error': str(e), 'stravaResponse': tokenData}, status=500)
+    else:
+        try:
+            stravaLogin = athlete.stravaLogin
+            response = requests.post(tokenUrl, data=payload)
+            tokenData = response.json()
+            stravaLogin.stravaTokenType = tokenData['token_type']
+            stravaLogin.stravaExpiration = tokenData['expires_at']
+            stravaLogin.stravaRefreshToken = tokenData['refresh_token']
+            stravaLogin.stravaAccessToken = tokenData['access_token']
+            stravaLogin.save()
+            return JsonResponse({'message':'Strava Profile Linked'})
+        except Exception as e:
+            return JsonResponse({'error': str(e), 'stravaResponse': tokenData}, status=500)
     
-    profileUrl = 'https://www.strava.com/api/v3/athlete'
-    headers = {'Authorization': f'Bearer {stravaAccessToken}'}
-    profileResponse = requests.get(profileUrl, headers=headers)
-    profileData = profileResponse.json()
-
-    # Do something with the profile_data, like displaying it in a template
-    return JsonResponse(profileData)
 
 @csrf_exempt
 def getStravaActivities(request):
@@ -602,6 +610,26 @@ def getStravaActivities(request):
     except Exception as e:
         return JsonResponse({'error': str(e), 'stravaResponse': activitiesData}, status=500)
     
+@csrf_exempt
+def revokeStravaAccess(request):
+    revokeData = {}
+    try:
+        athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
+        stravaLogin = athlete.stravaLogin
+        stravaAccessToken = stravaLogin.stravaAccessToken
+        revokeUrl = 'https://www.strava.com/oauth/deauthorize'
+        headers = {'Authorization': f'Bearer {stravaAccessToken}'}
+        revokeReponse = requests.post(revokeUrl, headers)
+        revokeData = revokeReponse.json()
+        print(revokeData)
+        stravaLogin.delete()
+        #athetathlete.stravaLogin = None
+        return JsonResponse(revokeData)
+    except Exception as e:
+        return JsonResponse({'error': str(e), 'stravaResponse': revokeData}, status=500)
+
+
+
 
 
 #calls for activities

@@ -31,3 +31,17 @@ For convenience and utility, the proposed Collaborative Training Log web applica
 https://github.com/mui/material-ui/tree/v5.15.14/docs/data/material/getting-started/templates
 
 ## Django Back-End
+
+
+### Dependencies
+Please see requirements.txt
+To install:
+#### `pip install -r requirements.txt`
+
+### Running Server
+Navigate to CollaborativeTrainingLog\ctl
+
+Call:
+#### `python manage.py runserver`
+
+The server will be running on 127.0.0.1:8000

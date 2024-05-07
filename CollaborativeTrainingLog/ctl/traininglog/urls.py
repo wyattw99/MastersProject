@@ -53,9 +53,9 @@ urlpatterns = [
     
     #urls for strava
     path("getStravaAccessToken",views.getAccessToken, name="getToken"),
-    path("exchangeToken", views.exchangeToken, name="exchangeToken"),
     path("getStravaActivities", views.getStravaActivities, name="getStravaActivities"),
     path("revokeStravaAccess",views.revokeStravaAccess, name="revokeAccess"),
+    path("<int:athleteID>/exchangeToken", views.exchangeToken, name="testToken"),
     
     #urls for activities
     path("newActivity",views.createActivity, name="newActivity"),

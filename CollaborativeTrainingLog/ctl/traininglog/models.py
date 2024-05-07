@@ -17,6 +17,7 @@ class StravaLogin(models.Model):
     stravaRefreshToken = models.CharField(max_length=50)
     stravaAccessToken = models.CharField(max_length=50)
     stravaAuthorizationCode = models.CharField(max_length=50)
+    stravaAuthorizationScope = models.CharField(max_length=50)
 
 class User(AbstractUser):
     isCoach = models.BooleanField(default=False)

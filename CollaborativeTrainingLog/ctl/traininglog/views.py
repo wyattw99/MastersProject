@@ -66,11 +66,10 @@ def logoutRequest(request):
 #             return JsonResponse({'error': str(e)}, status=500)
 #     else:
 #         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
-
-
     
-    
-        
+  
+
+      
 #calls for user
 @csrf_exempt
 def createUser(request):
@@ -108,11 +107,14 @@ def getUser(request, userID):
                     'isCoach': user.isCoach,
                     'isAthlete': user.isAthlete,
                 }
-            if user.isCoach:
-                return JsonResponse({'userData': userData, 'coachId': user.coachProfile.coachId, 'teamId': user.coachProfile.team})
-            elif user.isAthlete:
-                return JsonResponse({'userData': userData, 'coachId': user.athleteProfile.athleteId, 'athleteId': user.athleteProfile.team})
-            else:
+            try:
+                if user.isCoach:
+                    return JsonResponse({'userData': userData, 'coachId': user.coachProfile.coachId, 'teamId': user.coachProfile.team})
+                elif user.isAthlete:
+                    return JsonResponse({'userData': userData, 'athleteId': user.athleteProfile.athleteId, 'teamId': user.athleteProfile.team})
+                else:
+                    return JsonResponse(userData)
+            except Exception as e:
                 return JsonResponse(userData)
         
         except Exception as e:
@@ -301,17 +303,20 @@ def assignToAthletes(request):
     if request.method == 'PUT':
         workout = Workout.objects.get(workoutId = request.GET.get("workoutID"))
         numAthletes = int(request.GET.get("numAthletes"))
-        if numAthletes > 1:
-            athleteIDs = request.GET.get("athleteIDs").split(",")   
-            athletes = Athlete.objects.filter(pk__in=athleteIDs)  
-        else:
-            athleteIDs = request.GET.get("athleteIDs")
-            athletes = Athlete.objects.get(athleteId=athleteIDs)
         try:
-            for athlete in athletes:
-                workout.athletes.add(athlete)
-            workout.save()
-            return JsonResponse({'message': 'Athletes Assigned to Workout'})     
+            if numAthletes > 1:
+                athleteIDs = request.GET.get("athleteIDs").split(",")   
+                athletes = Athlete.objects.filter(pk__in=athleteIDs)
+                for athlete in athletes:
+                    workout.athletes.add(athlete)
+                workout.save()
+                return JsonResponse({'message': 'Athletes Assigned to Workout'})     
+            else:
+                athleteIDs = request.GET.get("athleteIDs")
+                athletes = Athlete.objects.get(athleteId=athleteIDs)
+                workout.athletes.add(athletes)
+                workout.save()
+                return JsonResponse({'message': 'Athletes Assigned to Workout'})
         except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
     else:
@@ -489,7 +494,8 @@ def getTrainingGroup(request, groupID):
             athletes = group.athletes.all()
             athleteData = [{
                     'firstName': athlete.user.first_name,
-                    'lastName': athlete.user.last_name
+                    'lastName': athlete.user.last_name,
+                    'athleteID': athlete.athleteId
                 } for athlete in athletes]
             groupData = {
                     'groupId': group.groupId,
@@ -524,7 +530,8 @@ def addAthleteToGroup(request, athleteID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
             athlete = Athlete.objects.get(athleteId = athleteID)
-            athlete.trainingGroups = TrainingGroup.objects.get(groupId=request.GET.get('groupID'))
+            group = TrainingGroup.objects.get(groupId=request.GET.get('groupID'))
+            athlete.trainingGroups.add(group)
             athlete.save()
             return JsonResponse({'message': 'Athlete added to group successfully'})
         except Exception as e:
@@ -537,7 +544,7 @@ def removeAthleteFromGroup(request, athleteID):
     if request.method == 'POST' or request.method == 'PUT':
         try:
             athlete = Athlete.objects.get(athleteId = athleteID)
-            athlete.trainingGroups.remove(request.Get.get("groupID"))
+            athlete.trainingGroups.remove(request.GET.get("groupID"))
             athlete.save()
             return JsonResponse({'message': 'Athlete removed from team successfully'})
         except Exception as e:
@@ -551,7 +558,7 @@ def removeAthleteFromGroup(request, athleteID):
 
 #calls for strava
 stravaConnection = StravaAPI.objects.get(APIid=settings.STRAVA_API_CONNECTION_ID)
-@csrf_exempt
+@login_required
 def getAccessToken(request):
     athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
     scopes = 'activity:read_all'
@@ -560,7 +567,7 @@ def getAccessToken(request):
     stravaAuthURL = f'http://www.strava.com/oauth/authorize?client_id={clientId}&response_type=code&redirect_uri={redirectURI}&approval_prompt=force&scope={scopes}'
     return JsonResponse({'redirectURL': stravaAuthURL})
 
-@csrf_exempt
+@login_required
 def getStravaActivities(request):
     activitiesData = {}
     try:
@@ -618,7 +625,7 @@ def getStravaActivities(request):
     except Exception as e:
         return JsonResponse({'error': str(e), 'stravaResponse': activitiesData}, status=500)
     
-@csrf_exempt
+@login_required
 def revokeStravaAccess(request):
     revokeData = {}
     try:
@@ -713,7 +720,7 @@ def createActivity(request):
                                                  maxHeartrate=maxHeartrate, manual=manual, hasGps=hasGps,
                                                  averageSpeed=averageSpeed, maxSpeed=maxSpeed, startDate=startDate)
                 newActivity.save()
-                return JsonResponse({'message': 'Swimm created successfully',
+                return JsonResponse({'message': 'Swim created successfully',
                                      'activityId': newActivity.activityId})
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
@@ -845,7 +852,7 @@ def deleteActivity(request,activityID):
                 activity = Run.objects.get(activityId=activityID)
             elif activityType == "bike":
                 activity = Bike.objects.get(activityId=activityID)
-            elif activity == "swim":
+            elif activityType == "swim":
                 activity = Swim.objects.get(activityId=activityID)
             else:
                 activity = Other.objects.get(activityId=activityID)
@@ -864,7 +871,7 @@ def updateActivity(request, activityID):
             activity = Run.objects.get(activityId=activityID)
         elif activityType == "bike":
             activity = Bike.objects.get(activityId=activityID)
-        elif activity == "swim":
+        elif activityType == "swim":
             activity = Swim.objects.get(activityId=activityID)
         else:
             activity = Other.objects.get(activityId=activityID)
@@ -875,6 +882,21 @@ def updateActivity(request, activityID):
             activity.elapsedTime = request.GET.get('elapsedTime', activity.elapsedTime)
             activity.startDate = request.GET.get('startDate', activity.startDate)
             activity.distance = request.GET.get('distance', activity.distance)
+            hasHeartrate = request.GET.get('hasHeartrate')
+            if hasHeartrate == True:
+                activity.hasHeartrate = True
+                activity.avgHeartrate = request.GET.get("avgHeartrate")
+                activity.maxHeartrate = request.GET.get("maxHeartrate")
+            else:
+                activity.avgHeartrate = 0.0
+                activity.maxHeartrate = 0.0
+            manual = request.GET.get("manual")
+            if manual == False:
+                activity.manual = False
+                activity.hasGps = True
+            else:
+                activity.manual = True
+                activity.hasGps = False
             if activity.activityType == "bike":
                 activity.averageSpeed = request.GET.get('averageSpeed', activity.averageSpeed)
                 activity.maxSpeed = request.GET.get('maxSpeed', activity.maxSpeed)
@@ -935,7 +957,7 @@ def createComment(request):
 def deleteComment(request, commentID):
     if request.method == 'DELETE':
         try:
-            comment = Comment.object.get(commentId=commentID)
+            comment = Comment.objects.get(commentId=commentID)
             comment.delete()
             return JsonResponse({'message': 'Comment deleted successfully'})
         except Exception as e:
@@ -963,7 +985,7 @@ def getComments(request, activityID):
                   'commentId': comment.commentId,
                   'text': comment.text}
               commentsJson.append(commentData)
-          return JsonResponse(commentsJson)
+          return JsonResponse({'comments': commentsJson})
      except Exception as e:
          return JsonResponse({'error': str(e)}, status=500)
  else:
@@ -978,7 +1000,6 @@ def getComments(request, activityID):
 def getAthleteStats(request, athleteID):
     if request.method == 'GET':
         athlete = Athlete.objects.get(athleteId=athleteID)
-        
         activityType = request.GET.get("activityType")
         rangeStart = request.GET.get("rangeStart")
         rangeEnd = request.GET.get("rangeEnd")
@@ -986,7 +1007,6 @@ def getAthleteStats(request, athleteID):
         runData = {}
         swimData = {}
         otherData = {}
-        
         try:
             dateFilter = Q(startDate__gte=rangeStart, startDate__lte=rangeEnd) | Q(startDate__date=rangeEnd)
             bikeActivities = athlete.bikes.filter(dateFilter)
@@ -1133,13 +1153,15 @@ def viewRoster(request, teamID):
             'firstName': athlete.user.first_name,
             'lastName': athlete.user.last_name,
             'birthday': athlete.birthday,
-            'schoolyear': athlete.schoolYear
+            'schoolyear': athlete.schoolYear,
+            'athleteId': athlete.athleteId
             }for athlete in approvedAthletes]
         pendingRoster = [{
             'firstName': athlete.user.first_name,
             'lastName': athlete.user.last_name,
             'birthday': athlete.birthday,
-            'schoolyear': athlete.schoolYear
+            'schoolyear': athlete.schoolYear,
+            'athleteId': athlete.athleteId
             }for athlete in pendingAthletes]
         roster = {
             'approved': approvedRoster,

@@ -119,7 +119,7 @@ def exchangeAuthorizationToken(athlete, stravaConnection, authorizationCode, aut
             newStravaLogin.save()
             athlete.stravaLogin = newStravaLogin
             athlete.save()
-            return True, "Account Linked"
+            return True, "Account Linked, please close this page"
         except Exception as e:
             return False, str(e)
     else:
@@ -134,7 +134,7 @@ def exchangeAuthorizationToken(athlete, stravaConnection, authorizationCode, aut
             stravaLogin.stravaAuthorizationCode = authorizationCode
             stravaLogin.stravaAuthorizationScope = authorizationScope
             stravaLogin.save()
-            return True, "Account Linked"
+            return True, "Account Linked, please close this page"
         except Exception as e:
             return False, str(e)
     

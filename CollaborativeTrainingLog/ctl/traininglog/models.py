@@ -36,9 +36,9 @@ class Athlete(models.Model):
     user = models.OneToOneField(User, on_delete = models.CASCADE, related_name='athleteProfile')
     athleteId = models.BigAutoField(primary_key=True)
     team = models.ForeignKey(Team, on_delete=models.SET_NULL, related_name='athletes', null=True, blank=True)
-    pending = models.BooleanField(default=True)
+    pending = models.BooleanField(default=True) #meaning they are approved or pending for the roster they are joining
     birthday = models.DateField(null=False, blank=False)
-    schoolYear = models.CharField(max_length=20, null=False)  
+    schoolYear = models.CharField(max_length=20, null=False)  #can be whatever an athlete feels is appropiate to describe themselves
     trainingGroups = models.ManyToManyField(TrainingGroup, related_name='athletes')
     stravaLogin = models.OneToOneField(StravaLogin, on_delete=models.SET_NULL, null=True, blank=True)
     

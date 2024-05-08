@@ -552,12 +552,30 @@ def removeAthleteFromGroup(request, athleteID):
     else:
         return JsonResponse({'message': 'Only POST or PUT requests are allowed'}, status=405)
 
-
+@login_required
+def getTeamsGroups(request, teamID):
+    if request.method == 'GET':
+        try:
+            team = Team.objects.get(teamId=teamID)
+            groups = team.trainingGroups.all()
+            groupsJson = []
+            for group in groups:
+               groupData = {
+                   'groupName': group.groupName,
+                   'groupId': group.groupId
+                   }
+               groupsJson.append(groupData)
+            return JsonResponse({'groups': groupsJson})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
 
 
 
 #calls for strava
-stravaConnection = StravaAPI.objects.get(APIid=settings.STRAVA_API_CONNECTION_ID)
+#stravaConnection = StravaAPI.objects.get(APIid=settings.STRAVA_API_CONNECTION_ID)
+stravaConnection = StravaAPI.objects.create(clientId='98300', clientSecret='2c15fb7ebf1d3016e69f19c4d75eaabc855912f9') #used to run tests
 @login_required
 def getAccessToken(request):
     athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))

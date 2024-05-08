@@ -82,7 +82,7 @@ WSGI_APPLICATION = "ctl.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-STRAVA_API_CONNECTION_ID = 1
+#STRAVA_API_CONNECTION_ID = 1
 
 DATABASES = {
     "default": {

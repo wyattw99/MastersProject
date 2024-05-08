@@ -54,7 +54,6 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
-
 SESSION_COOKIE_HTTPONLY = False
 
 #LOGIN_URL = '/accounts/login/' will need to update 
@@ -82,6 +81,8 @@ WSGI_APPLICATION = "ctl.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+
+STRAVA_API_CONNECTION_ID = 1
 
 DATABASES = {
     "default": {

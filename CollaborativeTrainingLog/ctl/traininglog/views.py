@@ -1,17 +1,15 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-from django.middleware import csrf
-from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Activity, Run, Bike, Swim, Other, Comment, StravaLogin
+from .models import User, Athlete, Coach, Team, Workout, TrainingGroup, Run, Bike, Swim, Other, Comment, StravaAPI
 from django.db.models import Q
 from django.utils import timezone
-from django.shortcuts import render, redirect
 import requests
 from datetime import datetime
 import time
-
+from .utils.stravaUtils import stravaIdExists, createStravaActivity, tokenRefresh, tokenExpired, exchangeAuthorizationToken
+from django.conf import settings
 
 
 # Create your views here.
@@ -25,9 +23,7 @@ def getCookies(request):
 def loginRequest(request):
     if request.method == 'POST':
         username = request.GET.get('username')
-        print(username)
         password = request.GET.get('password')
-        print(password)
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
@@ -40,7 +36,6 @@ def loginRequest(request):
             else:
                 response = JsonResponse({'message': 'Login successful', 'userId': user.id, 'login message': 'admin login'})
             
-            print(response)
             return response
           
         else:
@@ -53,11 +48,27 @@ def logoutRequest(request):
     if request.method == 'POST':
         try:
             logout(request)
-            return JsonResponse({'message': 'Logout successful'})
+            response = JsonResponse({'message': 'Logout successful'})
+            response.delete_cookie('csrftoken')
+            return response
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
+    
+# @csrf_exempt
+# def logoutRequest(request):
+#     if request.method == 'POST':
+#         try:
+#             logout(request)
+#             return JsonResponse({'message': 'Logout successful'})
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=500)
+#     else:
+#         return JsonResponse({'message': 'Only POST requests are allowed'}, status=405)
+
+
+    
     
         
 #calls for user
@@ -539,63 +550,15 @@ def removeAthleteFromGroup(request, athleteID):
 
 
 #calls for strava
+stravaConnection = StravaAPI.objects.get(APIid=settings.STRAVA_API_CONNECTION_ID)
 @csrf_exempt
 def getAccessToken(request):
+    athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
     scopes = 'activity:read_all'
-    clientId = '98300'
-    redirectURI = 'http://localhost/exchange_token'
+    clientId = str(stravaConnection.clientId)
+    redirectURI = f'http://127.0.0.1:8000/external/{athlete.athleteId}/exchangeToken'
     stravaAuthURL = f'http://www.strava.com/oauth/authorize?client_id={clientId}&response_type=code&redirect_uri={redirectURI}&approval_prompt=force&scope={scopes}'
     return JsonResponse({'redirectURL': stravaAuthURL})
-
-@csrf_exempt
-def exchangeToken(request):
-    # After user authorization, exchange authorization code for access token
-    clientId = '98300'
-    clientSecret = '2c15fb7ebf1d3016e69f19c4d75eaabc855912f9'
-    code = request.GET.get('code')
-    athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
-    tokenUrl = 'https://www.strava.com/oauth/token'
-    payload = {
-        'client_id': clientId,
-        'client_secret': clientSecret,
-        'code': code,
-        'grant_type': 'authorization_code'
-    }
-    tokenData = {}
-    if athlete.stravaLogin is None:
-        try:
-            response = requests.post(tokenUrl, data=payload)
-            tokenData = response.json()
-            #print(tokenData)
-            athleteData = tokenData['athlete']
-            stravaID = athleteData['id']
-            stravaUserName = athleteData['username']
-            stravaTokenType = tokenData['token_type']
-            stravaExpiration = tokenData['expires_at']
-            stravaRefreshToken = tokenData['refresh_token']
-            stravaAccessToken = tokenData['access_token']
-            newStravaLogin = StravaLogin.objects.create(stravaUserName=stravaUserName, stravaID=stravaID, stravaTokenType=stravaTokenType, 
-                                                        stravaExpiration=stravaExpiration, stravaRefreshToken=stravaRefreshToken, stravaAccessToken=stravaAccessToken)
-            newStravaLogin.save()
-            athlete.stravaLogin = newStravaLogin
-            athlete.save()
-            return JsonResponse({'message':'Strava Profile Linked'})
-        except Exception as e:
-            return JsonResponse({'error': str(e), 'stravaResponse': tokenData}, status=500)
-    else:
-        try:
-            stravaLogin = athlete.stravaLogin
-            response = requests.post(tokenUrl, data=payload)
-            tokenData = response.json()
-            stravaLogin.stravaTokenType = tokenData['token_type']
-            stravaLogin.stravaExpiration = tokenData['expires_at']
-            stravaLogin.stravaRefreshToken = tokenData['refresh_token']
-            stravaLogin.stravaAccessToken = tokenData['access_token']
-            stravaLogin.save()
-            return JsonResponse({'message':'Strava Profile Linked'})
-        except Exception as e:
-            return JsonResponse({'error': str(e), 'stravaResponse': tokenData}, status=500)
-    
 
 @csrf_exempt
 def getStravaActivities(request):
@@ -603,6 +566,8 @@ def getStravaActivities(request):
     try:
         athlete = Athlete.objects.get(athleteId=request.GET.get("athleteID"))
         stravaLogin = athlete.stravaLogin
+        if tokenExpired(stravaLogin):
+            tokenRefresh(stravaLogin, stravaConnection)
         rangeStart = datetime.strptime(request.GET.get('rangeStart'),"%Y-%m-%d")
         rangeEnd = datetime.strptime(request.GET.get('rangeEnd'),"%Y-%m-%d")
         epochStart = time.mktime(rangeStart.timetuple())
@@ -612,7 +577,44 @@ def getStravaActivities(request):
         headers = {'Authorization': f'Bearer {stravaAccessToken}'}
         activitiesResponse = requests.get(activitiesUrl, headers=headers)
         activitiesData = activitiesResponse.json()
-        return JsonResponse(activitiesData)
+        databaseActivities = []
+        for activity in activitiesData:
+            preExistingActivity = False
+            stravaId = activity['id']
+            activityType = activity['type'].lower()
+            preExistingActivity = stravaIdExists(stravaId, activityType, athlete)
+            if preExistingActivity:
+                continue
+            else:
+                name = activity['name']
+                distance = activity['distance']
+                movingTime = activity['moving_time']
+                elapsedTime = activity['elapsed_time']
+                startDate = activity['start_date_local']
+                hasHeartrate = activity['has_heartrate']
+                if hasHeartrate == True:
+                    avgHeartrate = activity['average_heartrate']
+                    maxHeartrate = activity['max_heartrate']
+                else:
+                    avgHeartrate = 0.0
+                    maxHeartrate = 0.0
+                manual = activity['manual']
+                if manual == True:
+                    stravaManual = True
+                    hasGps = False
+                    if activityType == 'run':
+                        avgCadence = 0
+                else:
+                    stravaManual = False
+                    hasGps = True
+                    if activityType == 'run':
+                        avgCadence = activity['average_cadence']
+                avgSpeed = activity['average_speed']
+                maxSpeed = activity['max_speed']
+                activityId = createStravaActivity(athlete, activityType, name, distance, movingTime, elapsedTime, startDate, hasHeartrate, avgHeartrate, maxHeartrate, manual, stravaManual, hasGps, avgSpeed, maxSpeed, avgCadence, stravaId)
+                activityData = {'name': name, 'activityId': activityId}
+                databaseActivities.append(activityData)
+        return JsonResponse({'message': 'Strava activities added to database', 'databaseActivities': databaseActivities})
     except Exception as e:
         return JsonResponse({'error': str(e), 'stravaResponse': activitiesData}, status=500)
     
@@ -622,19 +624,30 @@ def revokeStravaAccess(request):
     try:
         athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))
         stravaLogin = athlete.stravaLogin
+        tokenRefresh(stravaLogin, stravaConnection)
         stravaAccessToken = stravaLogin.stravaAccessToken
         revokeUrl = 'https://www.strava.com/oauth/deauthorize'
-        headers = {'Authorization': f'Bearer {stravaAccessToken}'}
-        revokeReponse = requests.post(revokeUrl, headers)
+        params = {"access_token": stravaAccessToken}
+        revokeReponse = requests.post(revokeUrl, params=params)
         revokeData = revokeReponse.json()
-        print(revokeData)
         stravaLogin.delete()
-        #athetathlete.stravaLogin = None
         return JsonResponse(revokeData)
     except Exception as e:
         return JsonResponse({'error': str(e), 'stravaResponse': revokeData}, status=500)
-
-
+    
+@csrf_exempt
+def exchangeToken(request, athleteID):
+    try:
+        athlete = Athlete.objects.get(athleteId = athleteID)
+        code = request.GET.get('code', '')
+        scope = request.GET.get('scope', '')
+        successfulExchange, exchangeMessage = exchangeAuthorizationToken(athlete, stravaConnection, code, scope)
+        if successfulExchange == True:
+            return JsonResponse({'Status': 'linked', 'message': exchangeMessage})
+        elif successfulExchange == False:
+            return JsonResponse({'Status': 'Please Try Again', 'message': exchangeMessage})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 

@@ -84,4 +84,5 @@ urlpatterns = [
     path("newTeam",views.createTeam, name="newTeam"),
     path("getTeam/<str:teamName>/", views.getTeam, name="getTeam"),
     path("deleteTeam/<int:teamID>/",views.deleteTeam, name="deleteTeam"),
+    path("getTeamId/<int:teamID>/", views.getTeamById, name='getTeamById'),
 ]

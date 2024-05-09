@@ -45,12 +45,12 @@ urlpatterns = [
     path("getCoachWorkoutsRange/<int:coachID>/",views.getCoachWorkouts, name="getCoachWorkoutsRange"),
     
     #urls for training groups
-    path("newTrainingGroup",views.createTrainingGroup, name="newGroup"),
-    path("getTrainingGroup/<int:groupID>/",views.getTrainingGroup, name="getGroup"),
-    path("deleteTrainingGroup/<int:groupID>/", views.deleteAthlete, name="deleteGroup"),
-    path("addAthleteToGroup/<int:athleteID>/", views.addAthleteToGroup, name="addToGroup"),
-    path("removeAthleteFromGroup/<int:athleteID>/", views.removeAthleteFromGroup, name="removeFromGroup"),
-    path("getTeamGroups/<int:teamID>/", views.getTeamsGroups, name="teamGroups"),
+    path("newTrainingGroup",views.createTrainingGroup, name="newTrainingGroup"),
+    path("getTrainingGroup/<int:groupID>/",views.getTrainingGroup, name="getTrainingGroup"),
+    path("deleteTrainingGroup/<int:groupID>/", views.deleteTrainingGroup, name="deleteTrainingGroup"),
+    path("addAthleteToGroup/<int:athleteID>/", views.addAthleteToGroup, name="addToTrainingGroup"),
+    path("removeAthleteFromGroup/<int:athleteID>/", views.removeAthleteFromGroup, name="removeFromTrainingGroup"),
+    path("getTeamGroups/<int:teamID>/", views.getTeamsGroups, name="getTeamGroups"),
     
     #urls for strava
     path("getStravaAccessToken",views.getAccessToken, name="getToken"),

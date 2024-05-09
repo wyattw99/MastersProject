@@ -574,8 +574,8 @@ def getTeamsGroups(request, teamID):
 
 
 #calls for strava
-#stravaConnection = StravaAPI.objects.get(APIid=settings.STRAVA_API_CONNECTION_ID)
-stravaConnection = StravaAPI.objects.create(clientId='98300', clientSecret='2c15fb7ebf1d3016e69f19c4d75eaabc855912f9') #used to run tests
+stravaConnection = StravaAPI.objects.get(APIid=settings.STRAVA_API_CONNECTION_ID)
+#stravaConnection = StravaAPI.objects.create(clientId='0000', clientSecret='xxxxxxxxxxxxxxxxxxxxxx') #used to run tests, will not connect to strava
 @login_required
 def getAccessToken(request):
     athlete = Athlete.objects.get(athleteId=request.GET.get('athleteID'))

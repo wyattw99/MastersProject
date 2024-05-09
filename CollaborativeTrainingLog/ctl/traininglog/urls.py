@@ -50,6 +50,7 @@ urlpatterns = [
     path("deleteTrainingGroup/<int:groupID>/", views.deleteAthlete, name="deleteGroup"),
     path("addAthleteToGroup/<int:athleteID>/", views.addAthleteToGroup, name="addToGroup"),
     path("removeAthleteFromGroup/<int:athleteID>/", views.removeAthleteFromGroup, name="removeFromGroup"),
+    path("getTeamGroups/<int:teamID>/", views.getTeamsGroups, name="teamGroups"),
     
     #urls for strava
     path("getStravaAccessToken",views.getAccessToken, name="getToken"),

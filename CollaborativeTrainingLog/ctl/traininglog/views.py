@@ -1235,6 +1235,35 @@ def getTeam(request, teamName):
         return JsonResponse(teamData)
     else:
         return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
+        
+@login_required
+def getTeamById(request, teamID):
+    if request.method == 'GET':
+        try:
+            team = Team.objects.get(teamId=teamID)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        try:
+            coaches = Coach.objects.filter(team=team)
+            coachData = [{
+                    'firstName': coach.user.first_name,
+                    'lastName': coach.user.last_name
+                } for coach in coaches]
+            teamData = {
+                    'teamId': team.teamId,
+                    'teamName': team.teamName,
+                    'coaches': coachData
+                }
+        except Exception as e:
+            print(e)
+            teamData = {
+                    'teamId': team.teamId,
+                    'teamName': team.teamName,
+                    'coaches': ''
+                }
+        return JsonResponse(teamData)
+    else:
+        return JsonResponse({'message': 'Only GET requests are allowed'}, status=405)
     
 @login_required
 def deleteTeam(request, teamID):

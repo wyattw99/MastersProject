@@ -14,41 +14,104 @@ import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import MenuItem from '@mui/material/MenuItem';
 
 import dayjs from 'dayjs';
 import axios from 'axios';
 
 const date = dayjs();
+
+const types = [
+    {
+        value: 'run',
+        label: 'Run',
+    },
+    {
+        value: 'bike',
+        label: 'Bike',
+    },
+    {
+        value: 'swim',
+        label: 'Swim',
+    },
+    {
+        value: 'other',
+        label: 'Other',
+    },
+];
 export default function CreateActivity() {
     const handleSubmit = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
-        function redirect() {
-            console.log("SUCCESS")
+
+        var hasHeartRate = true;
+        if (data.getAvgHeartrate !== '' && data.getMaxHeartrate !== '') {
+            hasHeartRate = false;
         }
 
-        axios.post("http://127.0.0.1:8000/external/newActivity", null, {
-            params: {
-                athleteID: localStorage.getItem("athleteID"),
-                description: data.get('description'),
-                date: dayjs(data.get('date')).format("YYYY-MM-DD"),
-                title: data.get('title')
-            }
-        })
-            .then((response) => {
-                console.log(response)
-                if (response.status === 200) {
-                    redirect();
+        console.log(localStorage.getItem("csrfToken"))
+        console.log(dayjs(data.get('date')).format("YYYY-MM-DD hh:mm:ss.00000+00:00"))
+        if (data.get('activityType') === "run") {
+            axios.post(`http://127.0.0.1:8000/external/newActivity`, null, {
+                withCredentials: true,
+                params: {
+                    athleteID: localStorage.getItem("athleteID"),
+                    type: data.get("activityType"),
+                    description: data.get('description'),
+                    name: data.get('title'),
+                    movingTime: data.get('movingTime'),
+                    elapsedTime: data.get('elapsedTime'),
+                    startDate: dayjs(data.get('date')).format("YYYY-MM-DD hh:mm:ss.00000+00:00"), //2024-04-15 03:26:03.262689+00:00
+                    distance: data.get('distance'),
+                    hasHeartrate: String(hasHeartRate).charAt(0).toUpperCase() + String(hasHeartRate).slice(1),
+                    avgHeartrate: data.get('avgHeartrate'), // if hasHeartrate is true
+                    maxHeartrate: data.get('maxHeartrate'), // if hasHeartrate is true
+                    manual: 'True',
+                    maxPace: data.get('maxSpeed'), // if run
+                    averageCadence: data.get('avgCadence'), // if run
+                },
+                headers: {
+                    'X-CSRFToken': localStorage.getItem("csrfToken"),
                 }
-            }).catch(err => {
-                console.log(err);
-            });
-        console.log({
-            coachID: localStorage.getItem("coachID"),
-            description: data.get('description'),
-            date: dayjs(data.get('date')).format("YYYY-MM-DD"),
-            title: data.get('title')
-        });
+            })
+                .then((response) => {
+                    console.log(response);
+                    if (response.status === 200) {
+                        window.location.href = "/activity-view";
+                    }
+                }).catch(err => {
+                    console.log(err);
+                });
+        }
+        else {
+            axios.post(`http://127.0.0.1:8000/external/newActivity`, null, {
+                withCredentials: true,
+                params: {
+                    athleteID: localStorage.getItem("athleteID"),
+                    type: data.get("activityType"),
+                    description: data.get('description'),
+                    name: data.get('title'),
+                    movingTime: data.get('movingTime'),
+                    elapsedTime: data.get('elapsedTime'),
+                    startDate: dayjs(data.get('date')).format("YYYY-MM-DD hh:mm:ss.00000+00:00"),
+                    distance: data.get('distance'),
+                    hasHeartrate: String(hasHeartRate).charAt(0).toUpperCase() + String(hasHeartRate).slice(1),
+                    avgHeartrate: data.get('avgHeartrate'), // if hasHeartrate is true
+                    maxHeartrate: data.get('maxHeartrate'), // if hasHeartrate is true
+                    manual: 'True',
+                    maxSpeed: data.get('maxSpeed') // if bike or swim or other
+                },
+                headers: {
+                    'X-CSRFToken': localStorage.getItem("csrfToken"),
+                }
+            })
+                .then((response) => {
+                    console.log(response);
+                    window.location.href = "/activity-view";
+                }).catch(err => {
+                    console.log(err);
+                });
+        }
     };
 
     return (
@@ -93,6 +156,22 @@ export default function CreateActivity() {
                                 margin="normal"
                                 required
                                 fullWidth
+                                select
+                                name="activityType"
+                                label="Activity Type"
+                                defaultValue="other"
+                                id="activityType"
+                            >
+                                {types.map((option) => (
+                                    <MenuItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
                                 name="description"
                                 label="Description"
                                 id="description"
@@ -105,6 +184,66 @@ export default function CreateActivity() {
                                     <DatePicker label="Date" name="date" defaultValue={date} />
                                 </DemoContainer>
                             </LocalizationProvider>
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="movingTime"
+                                label="Moving Time (Seconds)"
+                                name="movingTime"
+                                size="small"
+                            />
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="elapsedTime"
+                                label="Elapsed Time (Seconds)"
+                                name="elapsedTime"
+                                size="small"
+                            />
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="distance"
+                                label="Distance (Meters)"
+                                name="distance"
+                                size="small"
+                            />
+                            <TextField
+                                margin="normal"
+                                fullWidth
+                                id="avgHeartrate"
+                                label="Average Heart Rate (bpm)"
+                                name="avgHeartrate"
+                                size="small"
+                            />
+                            <TextField
+                                margin="normal"
+                                fullWidth
+                                id="maxHeartrate"
+                                label="Max Heart Rate (bpm)"
+                                name="maxHeartrate"
+                                size="small"
+                            />
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="maxSpeed"
+                                label="Max Pace or Speed (meters/second)"
+                                name="maxSpeed"
+                                size="small"
+                            />
+                            <TextField
+                                margin="normal"
+                                fullWidth
+                                id="avgCadence"
+                                label="Average Cadence (For Runs)"
+                                name="avgCadence"
+                                size="small"
+                            />
                             <Button
                                 type="submit"
                                 fullWidth

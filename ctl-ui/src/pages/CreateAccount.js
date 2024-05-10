@@ -26,12 +26,12 @@ export default function CreateAccount() {
             console.log(isCoach)
             console.log(localStorage.getItem("userID"))
             if (isAthlete) {
-                localStorage.setItem("athlete", true);
+                localStorage.setItem("isAthlete", true);
                 console.log("athlete")
                 window.location.href = "/athlete-setup"
             }
             if (isCoach) {
-                localStorage.setItem("athlete", false);
+                localStorage.setItem("isAthlete", false);
                 console.log("coach")
                 window.location.href = "/team-setup"
             }

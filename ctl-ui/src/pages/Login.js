@@ -8,40 +8,95 @@ import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
+axios.defaults.withCredentials = true
 export default function LogIn() {
     const handleSubmit = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
-        function getUserInfo() {
-            axios.get(`http://127.0.0.1:8000/external/getUser/${localStorage.getItem('userID')}/`)
+
+        function getCoach() {
+            axios.get(`http://127.0.0.1:8000/external/getCoach/${localStorage.getItem("coachID")}/`, {
+                'withCredentials': 'true',
+            })
                 .then((response) => {
                     console.log(response)
                     if (response.status === 200) {
-                        localStorage.setItem("userID", response.data.id);
-                        localStorage.setItem("isAthlete", response.data.isAthlete);
+                        console.log(response);
+                        localStorage.setItem("teamID", response.data.teamID)
+                        getTeamName();
                     }
                 }).catch(err => {
                     console.log(err);
                 });
-            console.log({
-                joinTeam: data.get('joinTeam')
-            });
+        }
+
+        function getAthlete() {
+            axios.get(`http://127.0.0.1:8000/external/getAthlete/${localStorage.getItem("athleteID")}/`, {
+                'withCredentials': 'true',
+            })
+                .then((response) => {
+                    console.log(response);
+                    if (response.status === 200) {
+                        localStorage.setItem("teamID", response.data.teamID)
+                        getTeamName();
+                    }
+                }).catch(err => {
+                    console.log(err);
+                });
+        }
+
+        function getTeamName() {
+            if (localStorage.getItem("teamID") !== 'null' && localStorage.getItem("teamID") !== 'undefined') {
+                console.log(localStorage.getItem("teamID"));
+                axios.get(`http://127.0.0.1:8000/external/getTeamId/${localStorage.getItem("teamID")}/`)
+                    .then((response) => {
+                        console.log(response)
+                        if (response.status === 200) {
+                            localStorage.setItem("teamName", response.data.teamName);
+                        }
+                        else {
+                            localStorage.setItem("teamID", null);
+                            localStorage.setItem("teamName", null);
+                        }
+                        window.location.href = "/dashboard";
+                    }).catch(err => {
+                        console.log(err);
+                        localStorage.setItem("teamID", null);
+                        localStorage.setItem("teamName", null);
+                    });
+            }
+            else {
+                localStorage.setItem("teamID", null);
+                localStorage.setItem("teamName", null);
+                window.location.href = "/dashboard";
+            }
         }
 
         axios.post("http://127.0.0.1:8000/external/login", null, {
+            withCredentials: true,
             params: {
                 username: data.get('username'),
                 password: data.get('password')
             }
         })
             .then((response) => {
-                localStorage.setItem("csrfToken", response.data.csrf_token);
+                console.log(response);
                 localStorage.setItem("userID", response.data.userId);
                 localStorage.setItem("athleteID", response.data.athleteId);
                 localStorage.setItem("coachID", response.data.coachId);
-                //getUserInfo()
-                window.location.href = "/dashboard"
+                localStorage.setItem("csrfToken", Cookies.get('csrftoken'))
+                if (localStorage.getItem("athleteID") === 'undefined') {
+                    localStorage.setItem("athleteID", null);
+                    localStorage.setItem("isAthlete", false);
+                    getCoach();
+                }
+                if (localStorage.getItem("coachID") === 'undefined') {
+                    localStorage.setItem("coachID", null);
+                    localStorage.setItem("isAthlete", true)
+                    getAthlete();
+                }
             }).catch(err => {
                 console.log(err);
             });

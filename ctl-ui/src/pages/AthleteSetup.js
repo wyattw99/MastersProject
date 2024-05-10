@@ -77,14 +77,33 @@ const schoolYears = [
     },
 ];
 export default function AthleteSetup() {
+    var redirectURL = "";
+
+    function redirect() {
+        console.log("SUCCESS")
+        console.log(localStorage.getItem("athleteID"))
+        localStorage.clear()
+        window.location.href = "/"
+    }
+
     const handleSubmit = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
 
-        function redirect() {
-            console.log("SUCCESS")
-            console.log(localStorage.getItem("athleteID"))
-            window.location.href = "/"
+        function linkStrava() {
+            axios.get(`http://127.0.0.1:8000/external/getStravaAccessToken`, {
+                withCredentials: true,
+                params: {
+                    athleteID: localStorage.getItem("athleteID"),
+                }
+            })
+                .then((response) => {
+                    console.log(response);
+                    redirectURL = response.data.redirectURL
+                }).catch(err => {
+                    console.log(err);
+                    redirect();
+                });
         }
 
         axios.post("http://127.0.0.1:8000/external/newAthlete", null, {
@@ -98,15 +117,23 @@ export default function AthleteSetup() {
                 console.log(response)
                 if (response.status === 200) {
                     localStorage.setItem("athleteID", response.data.athleteId);
-                    redirect();
+                    if (data.get('stravaLink') !== 'null') {
+                        linkStrava();
+                    }
+                    else {
+                       redirect();
+                    }
                 }
             }).catch(err => {
                 console.log(err);
             });
+        linkStrava();
+
         console.log({
             birthday: dayjs(data.get('birthday')).format("YYYY-MM-DD"),
             schoolYear: data.get('schoolYear'),
-            userId: parseInt(localStorage.getItem("userID"))
+            userId: parseInt(localStorage.getItem("userID")),
+            stravaLink: data.get('stravaLink'),
         });
     };
 
@@ -148,20 +175,36 @@ export default function AthleteSetup() {
                         ))}
                     </TextField>
                     <FormControlLabel
+                        name="stravaLink"
                         value="stravaLink"
                         control={<Checkbox />}
-                        label="Link Strava account now? (You can do this later!)"
+                        label="Link Strava?"
                         labelPlacement="end"
                     />
-                    <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        color="light"
-                        sx={{ mt: 3, mb: 2, marginBottom: 5 }}
-                    >
-                        Finish
-                    </Button>
+                    {redirectURL !== '' ?
+                        <Container>
+                        <Typography align="center" > In a new tab, copy and paste this url and follow steps to link your account. Click 'Done' when finished.</Typography>
+                            <Button
+                                onClick={redirect}
+                                fullWidth
+                                variant="contained"
+                                color="light"
+                                sx={{ mt: 3, mb: 2, marginBottom: 5 }}
+                            >
+                                Done
+                                </Button>
+                        </Container>
+                        :
+                        <Button
+                            type="submit"
+                            fullWidth
+                            variant="contained"
+                            color="light"
+                            sx={{ mt: 3, mb: 2, marginBottom: 5 }}
+                        >
+                            Finish
+                        </Button>
+                    }
                 </Box>
             </Box>
         </Container>

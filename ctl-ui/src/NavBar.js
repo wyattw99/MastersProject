@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useState, useEffect } from 'react';
 //import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -16,8 +17,14 @@ import Badge from '@mui/material/Badge';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { mainListItems, secondaryListItems } from './pages/components/listItems';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Container from '@mui/material/Container';
 
 import loginImage from "./mainlogin.png"
+
+import axios from 'axios';
+import Cookies from 'js-cookie';
 
 const drawerWidth = 240;
 
@@ -92,14 +99,52 @@ const DrawerHeader = styled('div')(({ theme }) => ({
     ...theme.mixins.toolbar,
     justifyContent: 'flex-end',
 }));
+
 export default function NavBar() {
     const [open, setOpen] = React.useState(false);
     const toggleDrawer = () => {
         setOpen(!open);
     };
-    const closeDrawer = () => {
-        setOpen(false)
+
+    const [anchorEl, setAnchorEl] = React.useState(null);
+    const openMenu = Boolean(anchorEl);
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    useEffect(() => {
+        // This function will be called automatically when the component mounts
+        getRoster();
+    }, []);
+
+    function getRoster() {
+        axios.get(`http://127.0.0.1:8000/external/viewRoster/${localStorage.getItem("teamID")}/`, {
+            withCredentials: true,
+        })
+            .then((response) => {
+                console.log(response);
+
+            }).catch(err => {
+                console.log(err);
+            });
     }
+
+    function logout() {
+        axios.post("http://127.0.0.1:8000/external/logout", null, {
+            withCredentials: true,
+        })
+            .then((response) => {
+                console.log(response);
+                localStorage.clear()
+                window.location.href = "/"
+            }).catch(err => {
+                console.log(err);
+            });
+    }
+
 
     return (
         <Box sx={{ flexGrow: 1 }}>
@@ -132,18 +177,44 @@ export default function NavBar() {
                     >
                         Collaborative Training Log
                     </Typography>
-                    <IconButton color="inherit">
-                        <Badge badgeContent={4} color="secondary">
-                            <NotificationsIcon />
-                        </Badge>
-                    </IconButton>
-                            {window.location.pathname !== "/" && (
-                                <Button
-                                    href="/"
-                                >
-                                    Logout
-                                </Button>
-                            )}
+                    {(window.location.pathname !== "/" && window.location.pathname !== "/create-account" && window.location.pathname !== "/athlete-setup" && window.location.pathname !== "/team-setup" && localStorage.getItem("isAthlete") === 'false') && (
+                        <Box justifyContent="flex-end">
+                            <IconButton
+                                color="inherit"
+                                id="basic-button"
+                                aria-controls={openMenu ? 'basic-menu' : undefined}
+                                aria-haspopup="true"
+                                aria-expanded={openMenu ? 'true' : undefined}
+                                onClick={handleClick}
+                            >
+                                <Badge badgeContent={0} color="secondary">
+                                    <NotificationsIcon />
+                                </Badge>
+                            </IconButton>
+                            <Menu
+                                id="basic-menu"
+                                anchorEl={anchorEl}
+                                open={openMenu}
+                                onClose={handleClose}
+                                MenuListProps={{
+                                    'aria-labelledby': 'basic-button',
+                                }}
+                            >
+                                <Typography align="center" > Pending</Typography>
+                                <Divider></Divider>
+                                <MenuItem onClick={handleClose}>Athlete 1</MenuItem>
+                                <MenuItem onClick={handleClose}>Athlete 2</MenuItem>
+                                <MenuItem onClick={handleClose}>Athlete 3</MenuItem>
+                            </Menu>
+                        </Box>
+                    )}
+                    {(window.location.pathname !== "/" && window.location.pathname !== "/create-account" && window.location.pathname !== "/athlete-setup" && window.location.pathname !== "/team-setup") && (
+                        <Button
+                            onClick={logout}
+                        >
+                            Logout
+                        </Button>
+                    )}
                 </Toolbar>
             </AppBar>
             {/*<Drawer open={open}>*/}

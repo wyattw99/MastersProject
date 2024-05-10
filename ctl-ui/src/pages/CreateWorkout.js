@@ -28,6 +28,9 @@ export default function CreateWorkout() {
         }
 
         axios.post("http://127.0.0.1:8000/external/newWorkout", null, {
+            headers: {
+                'X-CSRFToken': localStorage.getItem("csrfToken"),
+            },
             params: {
                 coachID: localStorage.getItem("coachID"),
                 description: data.get('description'),
@@ -38,7 +41,7 @@ export default function CreateWorkout() {
             .then((response) => {
                 console.log(response)
                 if (response.status === 200) {
-                    redirect();
+                    window.location.href = "/workout-view";
                 }
             }).catch(err => {
                 console.log(err);

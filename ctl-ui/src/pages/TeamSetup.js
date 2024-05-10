@@ -64,6 +64,7 @@ export default function TeamSetup() {
             console.log("SUCCESS")
             console.log(localStorage.getItem("teamID"))
             console.log(localStorage.getItem("coachID"))
+            localStorage.clear()
             window.location.href = "/"
         }
         function createCoach() {
@@ -109,7 +110,7 @@ export default function TeamSetup() {
                 .then((response) => {
                     console.log(response)
                     if (response.status === 200) {
-                        localStorage.setItem("teamID", data.get('joinName'));
+                        localStorage.setItem("teamName", data.get('joinTeam'));
                         localStorage.setItem("teamID", response.data.teamId);
                         createCoach();
                     }

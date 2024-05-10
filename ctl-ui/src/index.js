@@ -13,6 +13,11 @@ import Dashboard from "./pages/Dashboard";
 import CreateWorkout from "./pages/CreateWorkout";
 import CreateActivity from "./pages/CreateActivity";
 import LinkStrava from "./pages/LinkStrava";
+import JoinTeam from "./pages/JoinTeam";
+import ActivityView from "./pages/ActivityView";
+import WorkoutView from "./pages/WorkoutView";
+import TeamPage from "./pages/TeamPage";
+import Stats from "./pages/Stats"
 
 const { palette } = createTheme();
 const { augmentColor } = palette;
@@ -40,6 +45,11 @@ export default function App() {
                         <Route path="create-workout" element={<CreateWorkout />} />
                         <Route path="create-activity" element={<CreateActivity />} />
                         <Route path="link-strava" element={<LinkStrava />} />
+                        <Route path="join-team" element={<JoinTeam />} />
+                        <Route path="activity-view" element={<ActivityView />} />
+                        <Route path="workout-view" element={<WorkoutView />} />
+                        <Route path="team-page" element={<TeamPage />} />
+                        <Route path="stats" element={<Stats />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

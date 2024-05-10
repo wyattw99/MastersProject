@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useState, useEffect } from "react";
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MuiDrawer from '@mui/material/Drawer';
@@ -23,79 +22,24 @@ import Button from '@mui/material/Button';
 
 import axios from "axios"
 
-const drawerWidth = 240;
-
-const AppBar = styled(MuiAppBar, {
-    shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
-    zIndex: theme.zIndex.drawer + 1,
-    transition: theme.transitions.create(['width', 'margin'], {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-    }),
-    ...(open && {
-        marginLeft: drawerWidth,
-        width: `calc(100% - ${drawerWidth}px)`,
-        transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-        }),
-    }),
-}));
-
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-    ({ theme, open }) => ({
-        '& .MuiDrawer-paper': {
-            position: 'relative',
-            whiteSpace: 'nowrap',
-            width: drawerWidth,
-            transition: theme.transitions.create('width', {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-            }),
-            boxSizing: 'border-box',
-            ...(!open && {
-                overflowX: 'hidden',
-                transition: theme.transitions.create('width', {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.leavingScreen,
-                }),
-                width: theme.spacing(7),
-                [theme.breakpoints.up('sm')]: {
-                    width: theme.spacing(9),
-                },
-            }),
-        },
-    }),
-);
-
 // TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
-export default function Dashboard() {
-    const [open, setOpen] = React.useState(true);
-    const toggleDrawer = () => {
-        setOpen(!open);
-    };
 
-
-    useEffect(() => {
-        handleClick();
-    }, []);
-
+export default function Stats() {
     function handleClick() {
         console.log(localStorage.getItem("userID"));
         axios.get(`http://127.0.0.1:8000/external/getUser/${localStorage.getItem("userID")}/`, {
             'withCredentials': 'true',
         })
-        .then((response) => {
-            console.log(response)
-            if (response.status === 200) {
-                console.log("SUCCESS");
-                console.log(response.data.username)
-            }
-        }).catch(err => {
-            console.log(err);
-        });
+            .then((response) => {
+                console.log(response)
+                if (response.status === 200) {
+                    console.log("SUCCESS");
+                    console.log(response.data.username)
+                }
+            }).catch(err => {
+                console.log(err);
+            });
     }
 
     return (
@@ -115,7 +59,7 @@ export default function Dashboard() {
                 >
                     <Toolbar />
                     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-                        <Typography variant="h2" align="center" > Dashboard </Typography>
+                        <Typography variant="h2" align="center" > Stats </Typography>
                         {/*<Grid container spacing={3}>*/}
                         {/*    */}{/* Chart */}
                         {/*    <Grid item xs={12} md={8} lg={9}>*/}

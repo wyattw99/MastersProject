@@ -45,3 +45,11 @@ Call:
 #### `python manage.py runserver`
 
 The server will be running on 127.0.0.1:8000
+
+#### Automated Testing
+To run the automated tests please see the instructions in \traininglog\tests.py to configure the project
+
+Once the project is set up call
+
+#### `python manage.py test traininglog`
+

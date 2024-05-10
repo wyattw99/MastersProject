@@ -850,10 +850,13 @@ def getActivity(request,activityID):
                  activityData = activity.jsonFormattedStr()
              elif activityType == "bike":
                  activity = Bike.objects.get(activityId=activityID)
+                 activityData = activity.jsonFormattedStr()
              elif activity == "swim":
                  activity = Swim.objects.get(activityId=activityID)
+                 activityData = activity.jsonFormattedStr()
              else:
                  activity = Other.objects.get(activityId=activityID)
+                 activityData = activity.jsonFormattedStr()
              return JsonResponse(activityData)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)

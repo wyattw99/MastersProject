@@ -4,34 +4,19 @@ For convenience and utility, the proposed Collaborative Training Log web applica
 
 ## React Front-End
 
-### Scripts
+### Scripts (run these within the ctl-ui directory)
+
+#### Install dependencies
+#### `npm install`
 
 #### Run App in development mode:
 #### `npm start`
 
 ### Libraries/Frameworks
 
-#### React Router
-#### `npm install react-router-dom`
-
-#### Material-UI
-#### `npm install @mui/material @emotion/react @emotion/styled`
-#### `npm install @mui/icons-material`
-#### `npm install @mui/x-date-pickers`
-#### `npm install @mui/x-charts`
-
-#### Day.js
-#### `npm install dayjs`
-
-#### Axios
-#### `npm install axios`
-
-### Templates
-
-https://github.com/mui/material-ui/tree/v5.15.14/docs/data/material/getting-started/templates
+Components are utilized from the React framework Material-UI
 
 ## Django Back-End
-
 
 ### Dependencies
 Please see requirements.txt
